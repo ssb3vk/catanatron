@@ -18,6 +18,8 @@ class WeightedRandomPlayer(Player):
     """
 
     def decide(self, game, playable_actions):
+        # print(playable_actions)
+        # print("\n")
         bloated_actions = []
         for action in playable_actions:
             weight = WEIGHTS_BY_ACTION_TYPE.get(action.action_type, 1)

@@ -1,0 +1,5 @@
+Starting environment: 
+    source catanatron_env/bin/activate
+
+/Users/sidhardhburre/Documents/Semester08/RL/catanatron/catanatron_experimental/catanatron_experimental/cli/cli_players.py
+    Where you have to register the player
