@@ -26,9 +26,9 @@ from catanatron_experimental.machine_learning.players.playouts import (
     GreedyPlayoutsPlayer,
 )
 
-# from catanatron_experimental.machine_learning.players.online_mcts_dqn import (
-#     OnlineMCTSDQNPlayer,
-# )
+from catanatron_experimental.machine_learning.players.online_mcts_dqn import (
+    OnlineMCTSDQNPlayer,
+)
 
 # PLAYER_CLASSES = {
 #     "O": OnlineMCTSDQNPlayer,
@@ -94,6 +94,12 @@ CLI_PLAYERS = [
         "SameTurnAlphaBetaPlayer",
         "AlphaBeta but searches only within turn",
         SameTurnAlphaBetaPlayer,
+    ),
+    CliPlayer(
+        "DQN",
+        "OnlineMCTSDQNPlayer",
+        "Description MCTS with Deep Q Network",
+        OnlineMCTSDQNPlayer,
     ),
 ]
 

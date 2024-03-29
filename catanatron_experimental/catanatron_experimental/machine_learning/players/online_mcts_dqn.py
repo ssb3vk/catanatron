@@ -19,7 +19,7 @@ from tensorflow.keras.layers import (
     Dense,
     Flatten,
 )
-from tensorflow.keras.layers.experimental.preprocessing import Normalization
+# from tensorflow.keras.layers.experimental.preprocessing import Normalization
 from tensorflow.keras.optimizers import Adam
 
 from catanatron.game import Game
