@@ -124,6 +124,10 @@ class MCTSPlayer(Player):
         #     import sys
 
         #     sys.exit(1)
+
+        print(playable_actions)
+        print("\n")
+
         actions = list_prunned_actions(game) if self.prunning else playable_actions
         if len(actions) == 1:
             return actions[0]

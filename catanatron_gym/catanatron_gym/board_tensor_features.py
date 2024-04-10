@@ -18,10 +18,10 @@ from catanatron_gym.features import get_feature_ordering, iter_players
 # These assume 4 players
 WIDTH = 21
 HEIGHT = 11
-# CHANNELS = 16  # 4 color multiplier, 5 resource probas, 1 robber, 6 port
+CHANNELS = 16  # 4 color multiplier, 5 resource probas, 1 robber, 6 port
 # CHANNELS = 9  # 4 color multiplier, 5 resource probas
 # CHANNELS = 13  # 8 color multiplier, 5 resource probas
-CHANNELS = 20  # 8 color multiplier, 5 resource probas, 1 robber, 6 port
+# CHANNELS = 20  # 8 color multiplier, 5 resource probas, 1 robber, 6 port
 
 
 def get_channels(num_players):

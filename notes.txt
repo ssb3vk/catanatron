@@ -1,0 +1,10 @@
+Starting environment: 
+    source catanatron_env/bin/activate
+
+/Users/sidhardhburre/Documents/Semester08/RL/catanatron/catanatron_experimental/catanatron_experimental/cli/cli_players.py
+    Where you have to register the player
+
+
+In sid_experimental, we have two python scripts. The first, unified_tensor_splitter, splits up each dataset by the action_type
+The next script, data_unifier, unifies disparate action type directories from individual directories
+This way we can just deploy each directory (distinguished by action_type) to the models for training

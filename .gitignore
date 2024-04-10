@@ -136,3 +136,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# to ignore env files
+catanatron_env/
+
+# to ignore zipped data files
+*.tar.gz

@@ -67,13 +67,17 @@ def run_playouts(action_applied_game_copy, num_playouts):
     # print(f"{num_playouts} playouts took: {duration}. Results: {counter}")
     return counter
 
-
-def run_playout(action_applied_game_copy):
+# Made changes so that we can pass in a decision function
+# typically this will be our policy
+def run_playout(action_applied_game_copy, decide_fn=None):
     game_copy = action_applied_game_copy.copy()
-    game_copy.play(decide_fn=decide_fn)
+    if decide_fn is None: 
+        game_copy.play(decide_fn=decide_fn_rand)
+    else: 
+        game_copy.play(decide_fn=decide_fn)
     return game_copy.winning_color()
 
 
-def decide_fn(self, game, playable_actions):
+def decide_fn_rand(self, game, playable_actions):
     index = random.randrange(0, len(playable_actions))
     return playable_actions[index]

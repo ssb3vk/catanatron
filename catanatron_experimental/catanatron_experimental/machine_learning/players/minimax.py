@@ -1,9 +1,12 @@
 import time
 import random
+import numpy as np
+
 from typing import Any
 
 from catanatron.game import Game
 from catanatron.models.player import Player
+from catanatron.models.actions import ActionType
 from catanatron_experimental.machine_learning.players.tree_search_utils import (
     expand_spectrum,
     list_prunned_actions,
@@ -16,6 +19,48 @@ from catanatron_experimental.machine_learning.players.value import (
 
 ALPHABETA_DEFAULT_DEPTH = 2
 MAX_SEARCH_TIME_SECS = 20
+
+
+code_to_action_type_map = {
+    0: ActionType.MOVE_ROBBER, 
+    1: ActionType.DISCARD, 
+    2: ActionType.BUILD_ROAD, 
+    3: ActionType.BUILD_SETTLEMENT, 
+    4: ActionType.BUILD_CITY, 
+    5: ActionType.BUY_DEVELOPMENT_CARD, 
+    6: ActionType.PLAY_KNIGHT_CARD, 
+    7: ActionType.PLAY_YEAR_OF_PLENTY, 
+    8: ActionType.PLAY_ROAD_BUILDING, 
+    9: ActionType.PLAY_MONOPOLY, 
+    10: ActionType.MARITIME_TRADE, 
+    11: ActionType.END_TURN,
+}
+
+def split_actions_by_type(actions):
+    grouped_actions = {}
+    for action in actions:
+        # Assuming action_type is an enum and we use its value (string representation)
+        action_type_str = action.action_type
+        
+        # If the action type is not yet a key in the dictionary, add it with an empty list
+        if action_type_str not in grouped_actions:
+            grouped_actions[action_type_str] = []
+        
+        # Append the current action to the correct list based on its action_type
+        grouped_actions[action_type_str].append(action)
+    
+    return grouped_actions
+
+def create_action_type_mask(grouped_actions, code_to_action_type_map=code_to_action_type_map):
+    vector_size = len(code_to_action_type_map)
+    vector_mask = np.zeros(vector_size, dtype=int)
+    
+    for code, action_type in code_to_action_type_map.items():
+        if action_type in grouped_actions:
+            vector_mask[code] = 1
+    
+    return vector_mask
+
 
 
 class AlphaBetaPlayer(Player):
@@ -59,6 +104,40 @@ class AlphaBetaPlayer(Player):
         actions = self.get_actions(game)
         if len(actions) == 1:
             return actions[0]
+        
+
+        # sid's additions: 
+        grouped_actions = split_actions_by_type(playable_actions)
+        # Print the results or process them further
+        for action_type, actions in grouped_actions.items():
+            print(f"Action Type: {action_type}, \t\t Number of Actions: {len(actions)}")
+
+        vector_mask = create_action_type_mask(set(grouped_actions.keys()), code_to_action_type_map)    
+        print(vector_mask)
+
+        action_dist = vector_mask
+        scaled_action_dist = action_dist / (np.sum(action_dist))
+        action_indices = np.arange(len(action_dist))
+
+        print(scaled_action_dist)
+
+        selected_action_index = np.random.choice(action_indices, p=scaled_action_dist)
+        selected_action_type = code_to_action_type_map[selected_action_index]
+        print("selected action type: ", selected_action_type)
+
+        for action in playable_actions:
+            print(action.action_type)
+
+        playable_actions = [action for action in playable_actions if action.action_type == selected_action_type]
+
+
+
+        print("filtered_actions")
+        print(playable_actions)
+        print("\n")
+
+        
+        
 
         if self.epsilon is not None and random.random() < self.epsilon:
             return random.choice(playable_actions)

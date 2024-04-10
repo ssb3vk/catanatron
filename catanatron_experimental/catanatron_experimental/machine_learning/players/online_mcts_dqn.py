@@ -19,7 +19,7 @@ from tensorflow.keras.layers import (
     Dense,
     Flatten,
 )
-from tensorflow.keras.layers.experimental.preprocessing import Normalization
+# from tensorflow.keras.layers.experimental.preprocessing import Normalization
 from tensorflow.keras.optimizers import Adam
 
 from catanatron.game import Game
@@ -84,6 +84,20 @@ DATA_LOGGER = DataLogger(DATA_PATH)
 #     model.compile(loss="mse", optimizer=Adam(learning_rate=0.001), metrics=["mae"])
 #     return model
 
+def split_actions_by_type(actions):
+    grouped_actions = {}
+    for action in actions:
+        # Assuming action_type is an enum and we use its value (string representation)
+        action_type_str = action.action_type.value
+        
+        # If the action type is not yet a key in the dictionary, add it with an empty list
+        if action_type_str not in grouped_actions:
+            grouped_actions[action_type_str] = []
+        
+        # Append the current action to the correct list based on its action_type
+        grouped_actions[action_type_str].append(action)
+    
+    return grouped_actions
 
 class OnlineMCTSDQNPlayer(Player):
     def __init__(self, color):
@@ -109,9 +123,11 @@ class OnlineMCTSDQNPlayer(Player):
         start = time.time()
 
         # Run MCTS playouts for each possible action, save results for training.
+        # but we want to extend this so that we can have a different model for each action
+        # and we want to keep track of the action_type
+
         samples = []
         scores = []
-        print(playable_actions)
         for action in playable_actions:
             print("Considering", action)
             action_applied_game_copy = game.copy()
