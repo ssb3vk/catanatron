@@ -52,12 +52,14 @@ class GreedyPlayoutsPlayer(Player):
         )
         return best_action
 
+def playout_value(action_applied_game_copy): #make it so that we get the value of VPs rather than the number of wins, then get mean. Works well for 2 player but doesnt expand as well
+    pass
 
 def run_playouts(action_applied_game_copy, num_playouts):
     start = time.time()
     params = []
     for _ in range(num_playouts):
-        params.append(action_applied_game_copy)
+        params.append(action_applied_game_copy) #Just a bunch of copies?
     if USE_MULTIPROCESSING:
         with multiprocessing.Pool(NUM_WORKERS) as p:
             counter = Counter(p.map(run_playout, params))
@@ -68,12 +70,15 @@ def run_playouts(action_applied_game_copy, num_playouts):
     return counter
 
 
-def run_playout(action_applied_game_copy):
+def run_playout(action_applied_game_copy): 
     game_copy = action_applied_game_copy.copy()
     game_copy.play(decide_fn=decide_fn)
-    return game_copy.winning_color()
+    return game_copy.winning_color() #right now winning color is based on number of victory points, should this be the NN classification. 
 
 
-def decide_fn(self, game, playable_actions):
-    index = random.randrange(0, len(playable_actions))
+def decide_fn(self, game, playable_actions): #The method that actually determines which actions to take, right now its random but I think it can be changed
+    index = random.randrange(0, len(playable_actions)) #right now its just choosing a random action
     return playable_actions[index]
+
+def nn_decide_fn(self, game, playable_actions):
+    pass

@@ -106,6 +106,7 @@ class OnlineMCTSDQNPlayer(Player):
             'distance' against enemies. Actually this is the same as maximizing wins.
         Decision V2 looks the same as V1, but minimaxed some turns in the future.
         """
+
         if len(playable_actions) == 1:  # this avoids imbalance (if policy-learning)
             return playable_actions[0]
 
@@ -114,6 +115,9 @@ class OnlineMCTSDQNPlayer(Player):
         # Run MCTS playouts for each possible action, save results for training.
         samples = []
         scores = []
+        #action_to_model_idx= [(19, "MOVE_ROBBER"), (20, "DISCARD"), (92, "BUILD_ROAD"), (146, "BUILD_SETTLEMENT"), (200, "BUILD_CITY"), (201, "BUY_DEVELOPMENT_CARD"), (202, "PLAY_KNIGHT_CARD"), (222, "PLAY_YEAR_OF_PLENTY"), (223, "PLAY_ROAD_BUILDING"), (228, "PLAY_MONOPOLY"), (288, "MARITIME_TRADE")]
+        action_to_model_idx = [19, 20, 92, 146, 200, 201, 202, 222, 223, 228, 288]
+        models = [0] * len(action_to_model_idx)
         print(playable_actions)
         for action in playable_actions:
             print("Considering", action)
@@ -122,12 +126,17 @@ class OnlineMCTSDQNPlayer(Player):
             sample = create_sample_vector(action_applied_game_copy, self.color)
             samples.append(sample)
 
+            action_model = None
+            for i in range(len(action_to_model_idx)):
+                if action_to_model_idx[i] >= i:
+                    action_model = models[i]
+            
+            #Why is this only if train, when we choose the best action based on scores, doesn't really make sense
             if TRAIN:
                 # Save snapshots from the perspective of each player (more training!)
-                counter = run_playouts(action_applied_game_copy, NUM_PLAYOUTS)
+                counter = run_playouts(action_applied_game_copy, NUM_PLAYOUTS) #returns a counter of how many times the game was won or lost
                 mcts_labels = {k: v / NUM_PLAYOUTS for k, v in counter.items()}
-                DATA_LOGGER.consume(action_applied_game_copy, mcts_labels)
-
+                DATA_LOGGER.consume(action_applied_game_copy, mcts_labels) #adds the computation 
                 scores.append(mcts_labels.get(self.color, 0))
 
         # TODO: if M step, do all 4 things.
@@ -146,11 +155,14 @@ class OnlineMCTSDQNPlayer(Player):
     def update_model_and_flush_samples(self):
         """Trains using NN, and saves to disk"""
         global MIN_REPLAY_BUFFER_LENGTH, BATCH_SIZE, MODEL_PATH, OVERWRITE_MODEL
-
-        samples, board_tensors, labels = DATA_LOGGER.get_replay_buffer()
+        samples, board_tensors, labels = DATA_LOGGER.get_replay_buffer() #Samples is the feature vector, board tensors is the board state (common knowledge), and labels is the montecarlo simulation
         if len(samples) < MIN_REPLAY_BUFFER_LENGTH:
             return
+        
 
+
+
+        
         # print("Training...")
         # model = get_model()
         # model.fit(
