@@ -105,6 +105,9 @@ class OnlineMCTSDQNPlayer(Player):
         self.step = 0
 
     def decide(self, game: Game, playable_actions):
+        
+        # print(playable_actions)
+
         """
         For each move, will run N playouts, get statistics, and save into replay buffer.
         Every M decisions, will:
