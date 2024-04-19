@@ -8,6 +8,8 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 import tensorflow as tf
+import torch
+import torch as nn
 from tensorflow.keras import Input, Model
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.models import Sequential
