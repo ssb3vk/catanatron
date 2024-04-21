@@ -1,4 +1,5 @@
 from collections import namedtuple
+import datetime
 import math
 import random
 import gymnasium as gym
@@ -18,6 +19,34 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device: ", device)
 
 Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state', 'terminated'))
+
+### 
+## Initialize Environment
+###
+
+def my_reward_function(game, p0_color):
+    winning_color = game.winning_color()
+    if p0_color == winning_color:
+        return 1
+    elif winning_color is None:
+        return 0
+    else:
+        return -1
+
+# 2-player catan until 6 points.
+env = gym.make(
+    "catanatron_gym:catanatron-v1",
+    config={
+        "map_type": "BASE",
+        "vps_to_win": 6,
+        "enemies": [AlphaBetaPlayer(Color.RED)],
+        "reward_function": my_reward_function,
+        "representation": "mixed",
+    },
+)
+#### Get the dimension of action and state
+n_actions = env.action_space.n
+n_observations = (1, 16, 21, 11)
 
 class PrioritizedReplayMemory(object):
     def __init__(self, capacity, alpha=0.2):
@@ -187,6 +216,32 @@ class DuelingDQN(nn.Module):
 
 #=========================================================================
 
+def load_latest_model(model_class, models_dir='models', model_type='policy'):
+    if model_type not in ['policy', 'target']:
+        raise ValueError("model_type must be 'policy' or 'target'")
+
+    prefix = f"{model_type}_net_parameters-"
+
+    if not os.path.exists(models_dir):
+        print(f"Directory '{models_dir}' does not exist. Returning a randomly initialized model.")
+        return model_class(n_observations, n_actions)  # Return a new instance of the model class
+
+    files = os.listdir(models_dir)
+
+    model_files = sorted([f for f in files if f.startswith(prefix) and f.endswith('.pth')])
+    
+    if not model_files:
+        print(f"No {model_type} model files found in the directory '{models_dir}'. Returning a randomly initialized model.")
+        return model_class(n_observations, n_actions)  
+
+    latest_model_file = model_files[-1]
+
+    model_path = os.path.join(models_dir, latest_model_file)
+    model = model_class(n_observations, n_actions)  # Assume model_class is a callable that returns an instance of the desired model
+    model.load_state_dict(torch.load(model_path))
+    print(f"Loaded {model_type} model from {model_path}")
+    return model
+
 # ===================================
 #  Hyperparameters
 # ===================================
@@ -200,30 +255,14 @@ LR = 1e-4
 # ==================================
 
 # =====================================================================
-#  Initialize Environment and Networks
+#  Initialize Networks
 # =====================================================================
-env = gym.make(
-    "catanatron_gym:catanatron-v1",
-    config={
-        "map_type": "BASE",
-        "vps_to_win": 6,
-        "enemies": [AlphaBetaPlayer(Color.RED)],
-        "representation": "mixed",
-    },
-)
-#### Get the dimension of action and state
-n_actions = env.action_space.n
-n_observations = (1, 16, 21, 11)
-
-print(n_actions)
-print(n_observations)
 
 
 #### Initilize DQN/DDQN Networks and optimizer
 ## Sid: this needs to look different because we have the large model
-policy_net = DQN3D(n_observations, n_actions).to(device) #Q
-target_net = DQN3D(n_observations, n_actions).to(device) #Q^
-## and then the invidual heads
+policy_net = load_latest_model(DQN3D, 'models', 'policy') #Q
+target_net = load_latest_model(DQN3D, 'models', 'target') #Q^
 # policy_net = DQN(n_observations, n_actions).to(device) #Q
 # target_net = DQN(n_observations, n_actions).to(device) #Q^
 # policy_net = DuelingDQN(n_observations, n_actions).to(device) #Q
@@ -242,64 +281,6 @@ optimizer = optim.AdamW(policy_net.parameters(), lr=LR, amsgrad=True)
 #### Initizalize Experience Replay Buffer
 # memory = ReplayMemory(10000)
 p_memory = PrioritizedReplayMemory(10000)
-
-
-def my_reward_function(game, p0_color):
-    winning_color = game.winning_color()
-    if p0_color == winning_color:
-        return 1
-    elif winning_color is None:
-        return 0
-    else:
-        return -1
-
-# 2-player catan until 6 points.
-env = gym.make(
-    "catanatron_gym:catanatron-v1",
-    config={
-        "map_type": "BASE",
-        "vps_to_win": 6,
-        "enemies": [AlphaBetaPlayer(Color.RED)],
-        "reward_function": my_reward_function,
-        "representation": "mixed",
-    },
-)
-
-# def optimize_model_DQN():
-#     if len(p_memory) < BATCH_SIZE:
-#         return
-#     states, actions, rewards, next_states, terminateds = zip(*p_memory.sample(BATCH_SIZE))
-    
-#     state_batch = []
-#     # print(type(states))
-#     for state in states:
-#         state_ex = torch.tensor(state.reshape([1, 16, 21, 11]), device=device, dtype=torch.float)
-#         state_batch.append(state_ex)
-
-#     state_batch = torch.stack(state_batch)
-#     # state_batch = torch.tensor(states, device=device, dtype=torch.float)
-#     action_batch = torch.tensor(actions, device=device)
-#     reward_batch = torch.tensor(rewards, device=device, dtype=torch.float32)
-#     # next_state_batch = torch.tensor(np.array(next_states), device=device, dtype=torch.float32)
-#     next_state_batch = []
-#     # print(type(states))
-#     for state in states:
-#         state_ex = torch.tensor(state.reshape([1, 16, 21, 11]), device=device, dtype=torch.float)
-#         next_state_batch.append(state_ex)
-#     next_state_batch = torch.stack(next_state_batch)
-#     terminated_batch = torch.tensor(terminateds, dtype=torch.int, device=device)
-    
-#     #### TODO
-#     ## state_action_values = Q(s,a, \theta) 
-#     ## expected_state_action_values = r + \gamma max_a Q(s',a, \theta_{tar})
-#     state_action_values = policy_net.get_state_action_values(state_batch, action_batch) 
-#     expected_state_action_values = reward_batch + (GAMMA * target_net.get_state_values(next_state_batch).detach()) * (1 - terminated_batch)
-
-#     loss = F.mse_loss(state_action_values, expected_state_action_values)
-
-#     optimizer.zero_grad()
-#     loss.backward()
-#     optimizer.step()
 
 def optimize_model_DQN():
     if len(p_memory) < BATCH_SIZE:
@@ -334,8 +315,6 @@ def optimize_model_DQN():
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
-
-
 
 #### Implementation of Double DQN
 def optimize_model_DDQN():
@@ -485,8 +464,17 @@ def train_models(algorithm):
     models_dir = 'models'
     if not os.path.exists(models_dir):
         os.makedirs(models_dir)
-    torch.save(policy_net.state_dict(), os.path.join(models_dir, 'policy_net_parameters.pth'))
-    torch.save(target_net.state_dict(), os.path.join(models_dir, 'target_net_parameters.pth'))
+
+    # Current timestamp
+    current_time = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+
+    # Filename with timestamp
+    policy_filename = f'policy_net_parameters-{current_time}.pth'
+    target_filename = f'target_net_parameters-{current_time}.pth'
+
+    # Save the model parameters with timestamp in the filename
+    torch.save(policy_net.state_dict(), os.path.join(models_dir, policy_filename))
+    torch.save(target_net.state_dict(), os.path.join(models_dir, target_filename))
 
 
     plt.title('Training with ' + algorithm)
