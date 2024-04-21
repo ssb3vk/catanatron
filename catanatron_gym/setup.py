@@ -23,4 +23,5 @@ setuptools.setup(
     ],
     python_requires=">=3.6",
     install_requires=["catanatron", "gymnasium==0.29.1", "numpy"],
+    representation="mixed"
 )

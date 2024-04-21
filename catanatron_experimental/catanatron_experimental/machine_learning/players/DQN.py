@@ -49,7 +49,7 @@ NUM_PLAYOUTS = 100
 MIN_REPLAY_BUFFER_LENGTH = 100
 BATCH_SIZE = 64
 FLUSH_EVERY = 1  # decisions. what takes a while is to generate samples via MCTS
-TRAIN = True
+TRAIN = False
 OVERWRITE_MODEL = False
 DATA_PATH = "data/mcts-playouts-validation"
 NORMALIZATION_MEAN_PATH = Path(DATA_PATH, "mean.npy")
@@ -62,14 +62,14 @@ NORMALIZATION_VARIANCE_PATH = Path(DATA_PATH, "variance.npy")
 DATA_LOGGER = DataLogger(DATA_PATH)
 
 
-# def get_model():
-#     global MODEL_SINGLETON
-#     if MODEL_SINGLETON is None:
-#         if os.path.isdir(MODEL_PATH):
-#             MODEL_SINGLETON = tf.keras.models.load_model(MODEL_PATH)
-#         else:
-#             MODEL_SINGLETON = create_model()
-#     return MODEL_SINGLETON
+def get_model():
+    global MODEL_SINGLETON
+    if MODEL_SINGLETON is None:
+        if os.path.isdir(MODEL_PATH):
+            MODEL_SINGLETON = tf.keras.models.load_model(MODEL_PATH)
+        else:
+            MODEL_SINGLETON = create_model()
+    return MODEL_SINGLETON
 
 
 # def create_model():
@@ -173,9 +173,9 @@ class MCTSSLPlayer(Player):
         # Run MCTS playouts for each possible action, save results for training.
         # but we want to extend this so that we can have a different model for each action
         # and we want to keep track of the action_type
-
-        for action 
-
+            
+        samples = []
+        scores = []
         for action in playable_actions:
             print("Considering", action)
             action_applied_game_copy = game.copy()
