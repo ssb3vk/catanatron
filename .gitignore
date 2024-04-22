@@ -139,6 +139,7 @@ dmypy.json
 
 # to ignore env files
 catanatron_env/
+models/
 
 # to ignore zipped data files
 *.tar.gz

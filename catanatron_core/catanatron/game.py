@@ -183,6 +183,35 @@ class Game:
                 result = color
 
         return result
+    
+    def highest_victory_points(self) -> int:
+        """Gets the highest number of victory points any player has.
+
+        Returns:
+            int: The highest number of victory points found among players; 0 if no points have been scored.
+        """
+        max_victory_points = 0
+        for color in self.state.colors:
+            key = player_key(self.state, color)
+            current_victory_points = self.state.player_state[f"{key}_ACTUAL_VICTORY_POINTS"]
+            if current_victory_points > max_victory_points:
+                max_victory_points = current_victory_points
+
+        return max_victory_points
+
+
+    def get_victory_points(self, color) -> int:
+        """Gets the number of victory points for a given player by color.
+
+        Args:
+            color (Color): The color representing the player whose victory points are to be retrieved.
+
+        Returns:
+            int: The number of victory points the player has; returns 0 if no points are recorded or the player does not exist.
+        """
+        key = player_key(self.state, color)
+        return self.state.player_state.get(f"{key}_ACTUAL_VICTORY_POINTS", 0)
+
 
     def copy(self) -> "Game":
         """Creates a copy of this Game, that can be modified without
