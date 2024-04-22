@@ -261,8 +261,8 @@ LR = 1e-4
 
 #### Initilize DQN/DDQN Networks and optimizer
 ## Sid: this needs to look different because we have the large model
-policy_net = load_latest_model(DQN3D, 'models', 'policy') #Q
-target_net = load_latest_model(DQN3D, 'models', 'target') #Q^
+policy_net = load_latest_model(DQN3D, 'models', 'policy').to(device) #Q
+target_net = load_latest_model(DQN3D, 'models', 'target').to(device) #Q^
 # policy_net = DQN(n_observations, n_actions).to(device) #Q
 # target_net = DQN(n_observations, n_actions).to(device) #Q^
 # policy_net = DuelingDQN(n_observations, n_actions).to(device) #Q
