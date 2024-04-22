@@ -30,7 +30,7 @@ def my_reward_function(game, p0_color):
         if p0_color == winning_color: 
             return 100
         else: 
-            return game.get_victory_points(p0_color) - game.highest_victory_points() - 50
+            return game.get_victory_points(p0_color) - game.highest_victory_points() - 100
     
     return game.get_victory_points(p0_color) - game.highest_victory_points()
 
@@ -372,7 +372,7 @@ def optimize_model_DN():
 # ===============================================================================================================
 
 #### Training Episodes
-NUM_EPISODES = 1000
+NUM_EPISODES = 10000
 
 #### Training Loop. If the input algorithm == "DQN", it will utilize DQN to train. 
 #### Similarly, if the input algorithm == "DDQN", it will utilize DDQN to train. If the input algorithm == "DN", it will utilize Dueling Networks to train
