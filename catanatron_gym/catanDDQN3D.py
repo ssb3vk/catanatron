@@ -507,10 +507,10 @@ def train_models(algorithm):
 
 if __name__ == "__main__":
     # generate_videos("random")
-    train_models("DQ3N")
+    # train_models("DQ3N")
     # generate_videos("DQN")
     # train_models("DDQN")
-    # train_models("DDQN3D")
+    train_models("DDQN3D")
     # train_models("DN")
     # generate_videos("DN")
     print("done")
