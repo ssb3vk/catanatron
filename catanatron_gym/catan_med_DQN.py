@@ -409,8 +409,9 @@ def train_models(algorithm):
                 if algorithm == "DQN" or "DDQN" or "DQ3N" or "DDQN3D":
                     state.to(device)
                     # print("iwthin decision")
-                    if state.dim() <= 4:  # Check if the batch dimension is missing
+                    if state.dim() == 4:  # Check if the batch dimension is missing
                         state = state.unsqueeze(0)  # Add batch dimension
+                    print(state.dim())
 
                     # select a_t = argmax_a Q(s_t, a; theta)
                     with torch.no_grad(): 
