@@ -281,7 +281,7 @@ optimizer = optim.AdamW(policy_net.parameters(), lr=LR, amsgrad=True)
 
 #### Initizalize Experience Replay Buffer
 # memory = ReplayMemory(10000)
-p_memory = PrioritizedReplayMemory(1000000)
+p_memory = PrioritizedReplayMemory(100000)
 
 def optimize_model_DQN():
     if len(p_memory) < BATCH_SIZE:
