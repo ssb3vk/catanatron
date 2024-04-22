@@ -15,7 +15,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import numpy as np
 
-models_dir = 'modelsDDQN3D'
+models_dir = 'modelsDN3D'
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device: ", device)
 
@@ -174,6 +174,88 @@ class DQN(nn.Module):
     def get_state_values(self, state_batch): 
         return self(state_batch).max(dim=1)[0]
 
+class DuelingDQN3D(nn.Module):
+    def __init__(self, input_shape=(1, 21, 11, 16), n_actions=10):
+        super(DuelingDQN3D, self).__init__()
+        
+        # 3D Convolutional layers
+        self.conv1 = nn.Conv3d(input_shape[0], 32, kernel_size=(3, 3, 3), padding='same')
+        self.pool1 = nn.MaxPool3d(kernel_size=(2, 2, 2))
+        self.conv2 = nn.Conv3d(32, 64, kernel_size=(3, 3, 3), padding='same')
+        self.pool2 = nn.MaxPool3d(kernel_size=(2, 2, 2))
+
+        # Compute the size of the flattened output after all convolution and pooling layers
+        self.flattened_size = self._get_conv_output(input_shape)
+
+        # Value stream
+        self.value_stream = nn.Sequential(
+            nn.Linear(self.flattened_size, 512),
+            nn.ReLU(),
+            nn.Linear(512, 512),
+            nn.ReLU(),
+            nn.Linear(512, 1)
+        )
+        
+        # Advantage stream
+        self.advantage_stream = nn.Sequential(
+            nn.Linear(self.flattened_size, 512),
+            nn.ReLU(),
+            nn.Linear(512, 512),
+            nn.ReLU(),
+            nn.Linear(512, n_actions)
+        )
+
+    def _get_conv_output(self, shape):
+        """Helper function to compute the size of the flattened features after convolutional layers"""
+        with torch.no_grad():
+            input = torch.rand(1, *shape)
+            output = self.pool2(self.conv2(self.pool1(self.conv1(input))))
+            return int(np.prod(output.size()[1:]))
+
+    def forward(self, x):
+        # Convolutional layers
+        x = F.relu(self.conv1(x))
+        x = self.pool1(x)
+        x = F.relu(self.conv2(x))
+        x = self.pool2(x)
+        x = x.view(-1, self.flattened_size)  # Flatten the output for dense layers
+        
+        # Dueling streams
+        V = self.value_stream(x)
+        A = self.advantage_stream(x)
+        
+        # Combine streams
+        Q = V + (A - A.mean(dim=1, keepdim=True))  # Adjusting A by subtracting its mean to stabilize learning
+        return Q
+    
+    def get_state_action_values(self, state_batch, action_batch):
+        """Get Q-values for specific state-action pairs.
+
+        Args:
+            state_batch (torch.Tensor): The batch of state observations.
+            action_batch (torch.Tensor): The batch of actions for which Q-values are required.
+
+        Returns:
+            torch.Tensor: A tensor containing the Q-values of the specified actions in the corresponding states.
+        """
+        q_values = self(state_batch)  # This will get the Q-values for all actions
+        row_indices = torch.arange(state_batch.size(0))  # Create an index array: [0, 1, 2, ..., n-1]
+        selected_q_values = q_values[row_indices, action_batch]  # Index the Q-values with the action indices
+        return selected_q_values
+
+    def get_state_values(self, state_batch):
+        """Get max Q-values for the given states.
+
+        Args:
+            state_batch (torch.Tensor): The batch of states.
+
+        Returns:
+            torch.Tensor: A tensor containing the maximum Q-value for each state in the batch.
+        """
+        q_values = self(state_batch)  # Compute Q-values for all actions for each state in the batch
+        max_q_values = q_values.max(dim=1)[0]  # Take the max across the actions dimension
+        return max_q_values
+
 #### Definition of Dueling Networkss
 class DuelingDQN(nn.Module):
     def __init__(self, n_observations, n_actions):
@@ -263,22 +345,25 @@ LR = 1e-4
 
 #### Initilize DQN/DDQN Networks and optimizer
 ## Sid: this needs to look different because we have the large model
-policy_net = load_latest_model(DQN3D, models_dir, 'policy').to(device) #Q
-target_net = load_latest_model(DQN3D, models_dir, 'target').to(device) #Q^
+# policy_net = load_latest_model(DQN3D, models_dir, 'policy').to(device) #Q
+# target_net = load_latest_model(DQN3D, models_dir, 'target').to(device) #Q^
 # policy_net = DQN(n_observations, n_actions).to(device) #Q
 # target_net = DQN(n_observations, n_actions).to(device) #Q^
 # policy_net = DuelingDQN(n_observations, n_actions).to(device) #Q
 # target_net = DuelingDQN(n_observations, n_actions).to(device) #Q^
 # target_net.load_state_dict(policy_net.state_dict())   
-optimizer = optim.AdamW(policy_net.parameters(), lr=LR, amsgrad=True)
+# optimizer = optim.AdamW(policy_net.parameters(), lr=LR, amsgrad=True)
 
 
 #### Initilize Dueling Networks and optimizer
 # policy_net_duel = DuelingDQN(n_observations, n_actions).to(device)
 # target_net_duel = DuelingDQN(n_observations, n_actions).to(device)
+policy_net_duel = load_latest_model(DuelingDQN3D, models_dir, 'policy').to(device)
+target_net_duel = load_latest_model(DuelingDQN3D, models_dir, 'target').to(device)
+
 # target_net_duel.load_state_dict(policy_net_duel.state_dict())   
 ## Only update the parameter for the policy network
-# optimizer_duel = optim.AdamW(policy_net_duel.parameters(), lr=LR, amsgrad=True)
+optimizer_duel = optim.AdamW(policy_net_duel.parameters(), lr=LR, amsgrad=True)
 
 #### Initizalize Experience Replay Buffer
 # memory = ReplayMemory(10000)
@@ -365,12 +450,23 @@ def optimize_model_DN():
         return
     # print(beta)
     states, actions, rewards, next_states, terminateds = zip(*p_memory.sample(BATCH_SIZE))
-    state_batch = torch.tensor(np.array(states), device=device, dtype=torch.float)
-    action_batch = torch.tensor(actions, device=device)
-    reward_batch = torch.tensor(rewards, device=device, dtype=torch.float)
-    next_state_batch = torch.tensor(np.array(next_states), device=device, dtype=torch.float)
-    terminated_batch = torch.tensor(terminateds, dtype=torch.int, device=device)
+    
+    state_batch = []
+    for state in states:
+        state_ex = state.reshape([1, 16, 21, 11]).clone().detach().to(device=device, dtype=torch.float)
+        state_batch.append(state_ex)
+    state_batch = torch.stack(state_batch)
 
+    action_batch = torch.tensor(actions, device=device)
+    reward_batch = torch.tensor(rewards, device=device, dtype=torch.float32)
+
+    next_state_batch = []
+    for state in next_states:
+        state_ex = state.reshape([1, 16, 21, 11]).clone().detach().to(device=device, dtype=torch.float)
+        next_state_batch.append(state_ex)
+    next_state_batch = torch.stack(next_state_batch)
+
+    terminated_batch = torch.tensor(terminateds, dtype=torch.int, device=device)
     #### TODO
     ## state_action_values = Q(s,a, \theta)
     ## expected_state_action_values = r + \gamma Q(s',a', \theta_{tar}) where a' = argmax_a Q(s',a, \theta)
@@ -396,6 +492,7 @@ NUM_EPISODES = 10000
 #### Similarly, if the input algorithm == "DDQN", it will utilize DDQN to train. If the input algorithm == "DN", it will utilize Dueling Networks to train
 
 def train_models(algorithm):
+    print("algorithm: ", algorithm)
     episode_returns = []
     average_returns = []
     for iteration in range(NUM_EPISODES):
@@ -428,14 +525,25 @@ def train_models(algorithm):
 
                         action = scaled_probabilities.argmax().item()
 
-                if algorithm == "DN":
+                if algorithm == "DN" or algorithm == "DN3D":
                     #### TODO
                     #### Finish the action based on Algorthm 2 in Homework (The same as Algorithm 1 but use different networks).
-                    state_tensor = torch.from_numpy(state)
-                    state_tensor.to(device)
+                    # state_tensor = torch.from_numpy(state)
+                    state.to(device)
+                    state = state.unsqueeze(0)
                     # select a_t = argmax_a Q(s_t, a; theta)
                     with torch.no_grad(): 
-                        action = policy_net_duel(state_tensor).argmax().item()
+                        action_probabilities = policy_net_duel(state.clone().detach().to(device=device, dtype=torch.float))
+                        valid_actions = env.unwrapped.get_valid_actions()
+                        mask = torch.tensor(np.zeros(n_actions), dtype=torch.float, device=device)
+                        mask[valid_actions] = 1
+                        
+
+                        masked_probabilities = action_probabilities * mask
+                        scaled_probabilities = masked_probabilities / masked_probabilities.sum()
+
+                        action = scaled_probabilities.argmax().item()
+
             else:   
                 action = random.choice(env.unwrapped.get_valid_actions())
 
@@ -448,11 +556,11 @@ def train_models(algorithm):
             current_episode_return += reward
 
             #### Update the target model
-            if algorithm == "DQN" or algorithm == "DDQN" or algorithm == "DQ3N" or algorithm == "DDQN3D":
+            if algorithm == "DQN" or algorithm == "DDQN" or algorithm == "DQ3N":
                 for target_param, policy_param in zip(target_net.parameters(), policy_net.parameters()):
                     target_param.data.copy_(TAU * policy_param.data + (1.0 - TAU) * target_param.data)
             
-            if algorithm == "DN":
+            if algorithm == "DN" or algorithm == "DN3D":
                 for target_param, policy_param in zip(target_net_duel.parameters(), policy_net_duel.parameters()):
                     target_param.data.copy_(TAU * policy_param.data + (1.0 - TAU) * target_param.data)
             
@@ -477,7 +585,7 @@ def train_models(algorithm):
                 optimize_model_DQN()
             if algorithm == "DDQN" or algorithm == "DDQN3D":
                 optimize_model_DDQN()
-            if algorithm == "DN":
+            if algorithm == "DN" or algorithm == "DN3D":
                 optimize_model_DN()
 
     if not os.path.exists(models_dir):
@@ -510,7 +618,8 @@ if __name__ == "__main__":
     # train_models("DQ3N")
     # generate_videos("DQN")
     # train_models("DDQN")
-    train_models("DDQN3D")
+    # train_models("DDQN3D")
     # train_models("DN")
+    train_models("DN3D")
     # generate_videos("DN")
     print("done")
