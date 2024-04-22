@@ -28,9 +28,9 @@ def my_reward_function(game, p0_color):
     winning_color = game.winning_color()
     if winning_color is not None: 
         if p0_color == winning_color: 
-            return 10
+            return 100
         else: 
-            return game.get_victory_points(p0_color) - game.highest_victory_points()
+            return game.get_victory_points(p0_color) - game.highest_victory_points() - 50
     
     return game.get_victory_points(p0_color) - game.highest_victory_points()
 
