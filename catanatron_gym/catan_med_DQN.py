@@ -282,7 +282,6 @@ optimizer = optim.AdamW(policy_net.parameters(), lr=LR, amsgrad=True)
 p_memory = PrioritizedReplayMemory(100000)
 
 def optimize_model_DQN():
-    print("optimizing")
     if len(p_memory) < BATCH_SIZE:
         return
     states, actions, rewards, next_states, terminateds = zip(*p_memory.sample(BATCH_SIZE))
@@ -406,7 +405,6 @@ def train_models(algorithm):
 
         while not (terminated or truncated):
             eps = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * iteration / EPS_DECAY)
-            print(state.dim() == 4)
             if random.random() > eps and state.dim() == 4:
                 if algorithm == "DQN" or "DDQN" or "DQ3N" or "DDQN3D":
                     state.to(device)
