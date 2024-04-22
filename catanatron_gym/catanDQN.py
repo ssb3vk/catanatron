@@ -400,11 +400,12 @@ def train_models(algorithm):
                         # action = policy_net(state_tensor).argmax().item()
                         action_probabilities = policy_net(state.clone().detach().to(device=device, dtype=torch.float))
                         valid_actions = env.unwrapped.get_valid_actions()
-                        mask = np.zeros(n_actions)
+                        mask = torch.tensor(np.zeros(n_actions), dtype=torch.float, device=device)
                         mask[valid_actions] = 1
+                        
 
                         masked_probabilities = action_probabilities * mask
-                        scaled_probabilities = action_probabilities / action_probabilities.sum()
+                        scaled_probabilities = masked_probabilities / masked_probabilities.sum()
 
                         action = scaled_probabilities.argmax().item()
 
