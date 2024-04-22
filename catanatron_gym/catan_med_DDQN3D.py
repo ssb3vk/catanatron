@@ -405,7 +405,7 @@ def train_models(algorithm):
 
         while not (terminated or truncated):
             eps = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * iteration / EPS_DECAY)
-            if random.random() > eps:
+            if random.random() > eps and state.dim() == 4:
                 if algorithm == "DQN" or algorithm == "DDQN" or algorithm == "DQ3N" or algorithm == "DDQN3D":
                     state.to(device)
                     # print("iwthin decision")
