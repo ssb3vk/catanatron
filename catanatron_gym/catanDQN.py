@@ -15,6 +15,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import numpy as np
 
+models_dir = 'modelsDDQN3D'
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device: ", device)
 
@@ -262,8 +263,8 @@ LR = 1e-4
 
 #### Initilize DQN/DDQN Networks and optimizer
 ## Sid: this needs to look different because we have the large model
-policy_net = load_latest_model(DQN3D, 'models', 'policy').to(device) #Q
-target_net = load_latest_model(DQN3D, 'models', 'target').to(device) #Q^
+policy_net = load_latest_model(DQN3D, models_dir, 'policy').to(device) #Q
+target_net = load_latest_model(DQN3D, models_dir, 'target').to(device) #Q^
 # policy_net = DQN(n_observations, n_actions).to(device) #Q
 # target_net = DQN(n_observations, n_actions).to(device) #Q^
 # policy_net = DuelingDQN(n_observations, n_actions).to(device) #Q
@@ -319,13 +320,30 @@ def optimize_model_DQN():
 
 #### Implementation of Double DQN
 def optimize_model_DDQN():
-    if len(memory) < BATCH_SIZE:
+    if len(p_memory) < BATCH_SIZE:
         return
     states, actions, rewards, next_states, terminateds = zip(*memory.sample(BATCH_SIZE))
-    state_batch = torch.tensor(np.array(states), device=device, dtype=torch.float)
+    # state_batch = torch.tensor(np.array(states), device=device, dtype=torch.float)
+    # action_batch = torch.tensor(actions, device=device)
+    # reward_batch = torch.tensor(rewards, device=device, dtype=torch.float)
+    # next_state_batch = torch.tensor(np.array(next_states), device=device, dtype=torch.float)
+    # terminated_batch = torch.tensor(terminateds, dtype=torch.int, device=device)
+
+    state_batch = []
+    for state in states:
+        state_ex = state.reshape([1, 16, 21, 11]).clone().detach().to(device=device, dtype=torch.float)
+        state_batch.append(state_ex)
+    state_batch = torch.stack(state_batch)
+
     action_batch = torch.tensor(actions, device=device)
-    reward_batch = torch.tensor(rewards, device=device, dtype=torch.float)
-    next_state_batch = torch.tensor(np.array(next_states), device=device, dtype=torch.float)
+    reward_batch = torch.tensor(rewards, device=device, dtype=torch.float32)
+
+    next_state_batch = []
+    for state in next_states:
+        state_ex = state.reshape([1, 16, 21, 11]).clone().detach().to(device=device, dtype=torch.float)
+        next_state_batch.append(state_ex)
+    next_state_batch = torch.stack(next_state_batch)
+
     terminated_batch = torch.tensor(terminateds, dtype=torch.int, device=device)
 
     #### TODO
@@ -391,7 +409,7 @@ def train_models(algorithm):
         while not (terminated or truncated):
             eps = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * iteration / EPS_DECAY)
             if random.random() > eps:
-                if algorithm == "DQN" or "DDQN" or "DQ3N":
+                if algorithm == "DQN" or "DDQN" or "DQ3N" or "DDQN3D":
                     state.to(device)
                     # print("iwthin decision")
                     state = state.unsqueeze(0)
@@ -457,13 +475,11 @@ def train_models(algorithm):
             ## Choose your algorithm here
             if algorithm == "DQN" or "DQ3N":
                 optimize_model_DQN()
-            if algorithm == "DDQN":
+            if algorithm == "DDQN" or "DDQN3D":
                 optimize_model_DDQN()
             if algorithm == "DN":
                 optimize_model_DN()
 
-
-    models_dir = 'models'
     if not os.path.exists(models_dir):
         os.makedirs(models_dir)
 
@@ -491,9 +507,10 @@ def train_models(algorithm):
 
 if __name__ == "__main__":
     # generate_videos("random")
-    train_models("DQ3N")
+    # train_models("DQ3N")
     # generate_videos("DQN")
     # train_models("DDQN")
+    train_models("DDQN3D")
     # train_models("DN")
     # generate_videos("DN")
     print("done")
