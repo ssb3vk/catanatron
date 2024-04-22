@@ -406,16 +406,13 @@ def train_models(algorithm):
 
         while not (terminated or truncated):
             eps = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * iteration / EPS_DECAY)
+            print(state.dim() == 4)
             if random.random() > eps and state.dim() == 4:
                 if algorithm == "DQN" or "DDQN" or "DQ3N" or "DDQN3D":
                     state.to(device)
                     # print("iwthin decision")
                     while state.dim() == 4:  # Check if the batch dimension is missing
                         state = state.unsqueeze(0)  # Add batch dimension
-                    print(terminated)
-                    print(truncated)
-                    print(state.shape)
-                    print(state.dim())
 
                     # select a_t = argmax_a Q(s_t, a; theta)
                     with torch.no_grad(): 
