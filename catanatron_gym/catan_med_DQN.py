@@ -409,7 +409,7 @@ def train_models(algorithm):
                 if algorithm == "DQN" or "DDQN" or "DQ3N" or "DDQN3D":
                     state.to(device)
                     # print("iwthin decision")
-                    while state.dim() <= 4:  # Check if the batch dimension is missing
+                    while state.dim() == 4:  # Check if the batch dimension is missing
                         state = state.unsqueeze(0)  # Add batch dimension
                     print(terminated)
                     print(truncated)
