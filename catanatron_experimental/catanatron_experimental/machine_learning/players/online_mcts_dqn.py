@@ -24,6 +24,10 @@ from tensorflow.keras.layers import (
 # from tensorflow.keras.layers.experimental.preprocessing import Normalization
 from tensorflow.keras.optimizers import Adam
 
+
+from catanatron_experimental.machine_learning.players.action_model import ActionModel
+from catanatron_experimental.machine_learning.players.dueling_q_network import DuelingQNetworkConv
+
 from catanatron.game import Game
 from catanatron.models.player import Player
 from catanatron_experimental.machine_learning.players.playouts import run_playouts
@@ -55,6 +59,9 @@ NORMALIZATION_VARIANCE_PATH = Path(DATA_PATH, "variance.npy")
 # MODEL_PATH = str(Path("data/models/", MODEL_NAME))
 # MODEL_SINGLETON = None
 DATA_LOGGER = DataLogger(DATA_PATH)
+
+
+
 
 
 # def get_model():
@@ -120,6 +127,8 @@ class OnlineMCTSDQNPlayer(Player):
         #action_to_model_idx= [(19, "MOVE_ROBBER"), (20, "DISCARD"), (92, "BUILD_ROAD"), (146, "BUILD_SETTLEMENT"), (200, "BUILD_CITY"), (201, "BUY_DEVELOPMENT_CARD"), (202, "PLAY_KNIGHT_CARD"), (222, "PLAY_YEAR_OF_PLENTY"), (223, "PLAY_ROAD_BUILDING"), (228, "PLAY_MONOPOLY"), (288, "MARITIME_TRADE")]
         action_to_model_idx = [19, 20, 92, 146, 200, 201, 202, 222, 223, 228, 288]
         models = [0] * len(action_to_model_idx)
+        
+
         print(playable_actions)
         for action in playable_actions:
             print("Considering", action)
