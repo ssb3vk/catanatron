@@ -506,7 +506,7 @@ def optimize_model_DN():
 # ===============================================================================================================
 
 #### Training Episodes
-NUM_EPISODES = 10000
+NUM_EPISODES = 1
 
 #### Training Loop. If the input algorithm == "DQN", it will utilize DQN to train. 
 #### Similarly, if the input algorithm == "DDQN", it will utilize DDQN to train. If the input algorithm == "DN", it will utilize Dueling Networks to train
@@ -619,8 +619,8 @@ def train_models(algorithm):
     target_filename = f'target_net_parameters-{current_time}.pth'
 
     # Save the model parameters with timestamp in the filename
-    torch.save(policy_net.state_dict(), os.path.join(models_dir, policy_filename))
-    torch.save(target_net.state_dict(), os.path.join(models_dir, target_filename))
+    torch.save(policy_net_duel.state_dict(), os.path.join(models_dir, policy_filename))
+    torch.save(target_net_duel.state_dict(), os.path.join(models_dir, target_filename))
 
 
     plt.title('Training with ' + algorithm)
