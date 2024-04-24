@@ -140,17 +140,15 @@ class CatanatronEnv(gym.Env):
         self.representation = self.config.get("representation", "vector")
 
         assert all(p.color != Color.BLUE for p in self.enemies)
-        assert self.representation in ["mixed", "vector"]
+        assert self.representation in ["mixed", "vector", "tensor"]
         self.p0 = Player(Color.BLUE)
         self.players = [self.p0] + self.enemies  # type: ignore
-        self.representation = "mixed" if self.representation == "mixed" else "vector"
         self.features = get_feature_ordering(len(self.players), self.map_type)
         self.invalid_actions_count = 0
         self.max_invalid_actions = 10
 
         # TODO: Make self.action_space smaller if possible (per map_type)
         # self.action_space = spaces.Discrete(ACTION_SPACE_SIZE)
-
         if self.representation == "mixed":
             channels = get_channels(len(self.players))
             board_tensor_space = spaces.Box(
@@ -169,6 +167,13 @@ class CatanatronEnv(gym.Env):
                 }
             )
             self.observation_space = mixed
+        if self.representation == "tensor": 
+            print("setting observation_space to tensor")
+            channels = get_channels(len(self.players))
+            board_tensor_space = spaces.Box(
+                low=0, high=1, shape=(channels, 21, 11), dtype=float
+            )
+            self.observation_space = board_tensor_space
         else:
             self.observation_space = spaces.Box(
                 low=0, high=HIGH, shape=(len(self.features),), dtype=float
@@ -239,11 +244,23 @@ class CatanatronEnv(gym.Env):
         observation = self._get_observation()
         info = dict(valid_actions=self.get_valid_actions())
 
-        return observation, info
+        return (observation, info)
 
     def _get_observation(self):
         sample = create_sample(self.game, self.p0.color)
+        if self.representation == "tensor": 
+            # print("in if tensor")
+            board_tensor = create_board_tensor(
+                self.game, self.p0.color, channels_first=True
+            )
+            # print(board_tensor.shape)
+            # print(np.max(board_tensor))
+            # print(np.min(board_tensor))
+            # return {"board": board_tensor}
+            return board_tensor
+        
         if self.representation == "mixed":
+            print("mixed")
             board_tensor = create_board_tensor(
                 self.game, self.p0.color, channels_first=True
             )

@@ -3,6 +3,8 @@ import datetime
 import math
 import random
 import gymnasium as gym
+from gymnasium import Env, spaces
+
 import matplotlib.pyplot as plt
 import os
 
@@ -10,6 +12,8 @@ from catanatron import Color
 from catanatron.players.minimax import AlphaBetaPlayer
 from stable_baselines3 import SAC
 from stable_baselines3.common.evaluation import evaluate_policy
+from stable_baselines3.common.env_checker import check_env
+
 
 import torch
 import torch.nn as nn
@@ -17,11 +21,38 @@ import torch.optim as optim
 import torch.nn.functional as F
 import numpy as np
 
-models_dir = 'modelsDDQN3D'
+class ContinuousToDiscreteRescaledActionWrapper(Env):
+    """
+    An environment wrapper that:
+    - Rescales actions from a range of [-1, 1] to [0, 1]
+    - Converts continuous action values (interpreted as probabilities) to a discrete action
+    """
+    def __init__(self, env):
+        super().__init__()
+        self.env = env
+        # Adjust the lower and upper bounds to [-1, 1]
+        self.action_space = gym.spaces.Box(low=np.array([-1]*290), high=np.array([1]*290), shape=(290,), dtype=np.float32)
+        self.observation_space = env.observation_space
+
+    def step(self, action):
+        # Rescale the action from [-1, 1] to [0, 1]
+        rescaled_action = (action + 1) / 2
+        # Choose the action with the highest value as the discrete action
+        discrete_action = np.argmax(rescaled_action)
+        return self.env.step(discrete_action)
+
+    def reset(self, seed=None):
+        return self.env.reset(seed=seed)
+
+    def render(self, mode='human'):
+        return self.env.render(mode)
+
+    def close(self):
+        return self.env.close()
+
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device: ", device)
-
-Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state', 'terminated'))
 
 ### 
 ## Initialize Environment
@@ -45,16 +76,15 @@ env = gym.make(
         "vps_to_win": 6,
         "enemies": [AlphaBetaPlayer(Color.RED)],
         "reward_function": my_reward_function,
-        "representation": "mixed",
+        "representation": "tensor",
     },
 )
-#### Get the dimension of action and state
-# n_actions = env.action_space.n
-# n_observations = (1, 16, 21, 11)
-# print(env.observation_space["board"].shape)
+
+env = ContinuousToDiscreteRescaledActionWrapper(env)
+print(check_env(env))
 
 # Instantiate the agent
-model = SAC("MultiInputPolicy", env, verbose=1)
+model = SAC("MlpPolicy", env, verbose=1)
 # Train the agent and display a progress bar
 model.learn(total_timesteps=int(2e5), progress_bar=True)
 
