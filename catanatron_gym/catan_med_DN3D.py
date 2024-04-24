@@ -506,7 +506,7 @@ def optimize_model_DN():
 # ===============================================================================================================
 
 #### Training Episodes
-NUM_EPISODES = 1
+NUM_EPISODES = 10000
 
 #### Training Loop. If the input algorithm == "DQN", it will utilize DQN to train. 
 #### Similarly, if the input algorithm == "DDQN", it will utilize DDQN to train. If the input algorithm == "DN", it will utilize Dueling Networks to train
