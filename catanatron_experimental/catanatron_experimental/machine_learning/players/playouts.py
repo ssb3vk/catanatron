@@ -25,7 +25,7 @@ from catanatron_gym.board_tensor_features import (
 )
 
 DEFAULT_NUM_PLAYOUTS = 25
-USE_MULTIPROCESSING = False
+USE_MULTIPROCESSING = True
 NUM_WORKERS = multiprocessing.cpu_count()
 
 PLAYOUTS_BUDGET = 100
@@ -102,11 +102,11 @@ class GreedyPlayoutsPlayer(Player):
 def playout_value(action_applied_game_copy): #make it so that we get the value of VPs rather than the number of wins, then get mean. Works well for 2 player but doesnt expand as well
     pass
 
-def run_playouts(action_applied_game_copy, num_playouts):
+def run_playouts(action_applied_game_copy, num_playouts, policy_net, target_net):
     start = time.time()
     params = []
     for _ in range(num_playouts):
-        params.append(action_applied_game_copy) #Just a bunch of copies?
+        params.append((action_applied_game_copy, policy_net, target_net)) #Just a bunch of copies?
     if USE_MULTIPROCESSING:
         with multiprocessing.Pool(NUM_WORKERS) as p:
             counter = Counter(p.map(run_playout, params))
@@ -117,9 +117,10 @@ def run_playouts(action_applied_game_copy, num_playouts):
     return counter
 
 
-def run_playout(action_applied_game_copy): 
+def run_playout(args): 
+    action_applied_game_copy, policy_net, target_net = args
     game_copy = action_applied_game_copy.copy()
-    game_copy.play(decide_fn=nn_decide_fn)
+    game_copy.play(decide_fn= lambda x, y, z: dqn_decide_fn(x, y, z, policy_net, target_net))
     return game_copy.winning_color() #right now winning color is based on number of victory points, should this be the NN classification. 
 
 
@@ -127,9 +128,13 @@ def decide_fn(self, game, playable_actions): #The method that actually determine
     index = random.randrange(0, len(playable_actions)) #right now its just choosing a random action
     return playable_actions[index]
 
+def dqn_decide_fn(self, game, playable_actions, policy_net, target_net):
+    index = random.randrange(0, len(playable_actions)) #right now its just choosing a random action
+    return playable_actions[index]
 
 
-def nn_decide_fn(self, game, playable_actions):
+'''
+def multiheaded_decide_fn(self, game, playable_actions, policy_net, target_net):
     action_selection_model = get_action_selection_model()
     action_models = get_action_models()
 
@@ -153,5 +158,5 @@ def nn_decide_fn(self, game, playable_actions):
     else:
         print("move not in list of actions")
         return self.decide_fn(game, playable_actions) #if the predicted action isn't in our list of actions 
-
+'''
 

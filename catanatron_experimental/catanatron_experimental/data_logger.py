@@ -33,10 +33,14 @@ class DataLogger:
 
         for color in game.state.colors:
             sample = create_sample_vector(game, color)
+            #print("Single Sample Idx:", sample.shape)
+            
             flattened_board_tensor = tf.reshape(
                 create_board_tensor(game, color),
                 (WIDTH * HEIGHT * CHANNELS,),
             ).numpy()
+            #print("Board Tensor shape", flattened_board_tensor.shape)
+
             label = mcts_labels.get(color, 0)
 
             self.samples.append(sample)
