@@ -8,8 +8,14 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 import tensorflow as tf
+
 import torch
-import torch as nn
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
+import numpy as np
+import datetime
+
 from tensorflow.keras import Input, Model
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.models import Sequential
@@ -20,6 +26,9 @@ from tensorflow.keras.layers import (
     Dropout,
     Dense,
     Flatten,
+)
+from catanatron_gym.envs.catanatron_env import (
+    to_action_space
 )
 # from tensorflow.keras.layers.experimental.preprocessing import Normalization
 from tensorflow.keras.optimizers import Adam
@@ -51,10 +60,22 @@ MIN_REPLAY_BUFFER_LENGTH = 100
 BATCH_SIZE = 64
 FLUSH_EVERY = 1  # decisions. what takes a while is to generate samples via MCTS
 TRAIN = True
-OVERWRITE_MODEL = False
+OVERWRITE_MODEL = True
 DATA_PATH = "data/mcts-playouts-validation"
 NORMALIZATION_MEAN_PATH = Path(DATA_PATH, "mean.npy")
 NORMALIZATION_VARIANCE_PATH = Path(DATA_PATH, "variance.npy")
+
+# ===================================
+#  Hyperparameters
+# ===================================
+BATCH_SIZE = 64
+GAMMA = 0.99
+EPS_START = 0.9
+EPS_END = 0.003
+EPS_DECAY = 1000
+TAU = 0.002
+LR = 1e-4
+
 
 # ===== PLAYER STATE (here to allow pickle-serialization of player)
 # MODEL_NAME = "online-mcts-dqn-3.0"
@@ -65,8 +86,6 @@ DATA_LOGGER = DataLogger(DATA_PATH)
 
 POLICY_NET_SINGLETON = None
 TARGET_NET_SINGLETON = None
-
-
 
 
 
@@ -100,6 +119,11 @@ TARGET_NET_SINGLETON = None
 #     model.compile(loss="mse", optimizer=Adam(learning_rate=0.001), metrics=["mae"])
 #     return model
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+MODEL_DIR = os.getcwd() + "/catanatron_experimental/catanatron_experimental/machine_learning/players/models"
+
+print("Using device: ", device)
+
 
 def load_latest_model(model_class, models_dir='models', model_type='policy'):
     n_actions = 290
@@ -126,25 +150,30 @@ def load_latest_model(model_class, models_dir='models', model_type='policy'):
 
     model_path = os.path.join(models_dir, latest_model_file)
     model = model_class(n_observations, n_actions)  # Assume model_class is a callable that returns an instance of the desired model
-    model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu'))) #Remove this cpu setup if running on department machines
+    model.load_state_dict(torch.load(model_path, map_location=device)) #Remove this cpu setup if running on department machines
     print(f"Loaded {model_type} model from {model_path}")
     return model
 
 def get_policy_net():
-    global POLICY_NET_SINGLETON
+    global POLICY_NET_SINGLETON, MODEL_DIR
     if POLICY_NET_SINGLETON == None:
         print("Loading Policy Net from file")
-        POLICY_NET_SINGLETON = load_latest_model(DQN3D, models_dir = 'models', model_type="policy")
+        POLICY_NET_SINGLETON = load_latest_model(DQN3D, models_dir = MODEL_DIR, model_type="policy")
     
     return POLICY_NET_SINGLETON
 
 def get_target_net():
-    global TARGET_NET_SINGLETON
+    global TARGET_NET_SINGLETON, MODEL_DIR
     if TARGET_NET_SINGLETON == None:
         print("Loading Target net from file")
-        TARGET_NET_SINGLETON = load_latest_model(DQN3D, models_dir = 'models', model_type="target")
-    
+        TARGET_NET_SINGLETON = load_latest_model(DQN3D, models_dir = MODEL_DIR, model_type="target")
+
+
     return TARGET_NET_SINGLETON
+
+
+
+optimizer = optim.AdamW(get_policy_net().parameters(), lr=LR, amsgrad=True)
 
 
 class OnlineMCTSDQNPlayer(Player):
@@ -210,12 +239,12 @@ class OnlineMCTSDQNPlayer(Player):
                 # Save snapshots from the perspective of each player (more training!)
                 counter = run_playouts(action_applied_game_copy, NUM_PLAYOUTS, policy_net, target_net) #returns a counter of how many times the game was won or lost
                 mcts_labels = {k: v / NUM_PLAYOUTS for k, v in counter.items()}
-                DATA_LOGGER.consume(action_applied_game_copy, mcts_labels) #adds the computation 
+                DATA_LOGGER.consume(action_applied_game_copy, mcts_labels, action) #adds the computation 
                 scores.append(mcts_labels.get(self.color, 0))
 
         # TODO: if M step, do all 4 things.
         if TRAIN and self.step % FLUSH_EVERY == 0:
-            self.update_model_and_flush_samples()
+            self.update_model_and_flush_samples(game)
 
         # scores = get_model().call(tf.convert_to_tensor(samples))
         best_idx = np.argmax(scores)
@@ -226,16 +255,56 @@ class OnlineMCTSDQNPlayer(Player):
         self.step += 1
         return best_action
 
-    def update_model_and_flush_samples(self):
+    def update_model_and_flush_samples(self, game):
         """Trains using NN, and saves to disk"""
         global MIN_REPLAY_BUFFER_LENGTH, BATCH_SIZE, MODEL_PATH, OVERWRITE_MODEL
-        samples, board_tensors, labels = DATA_LOGGER.get_replay_buffer() #Samples is the feature vector, board tensors is the board state (common knowledge), and labels is the montecarlo simulation
+        samples, board_tensors, labels, actions = DATA_LOGGER.get_replay_buffer() #Samples is the feature vector, board tensors is the board state (common knowledge), and labels is the montecarlo simulation
         #print("Overall Samples Shape", samples.shape)
-    
-        if len(samples) < MIN_REPLAY_BUFFER_LENGTH:
-            return
-        
 
+        #I believe that board tensors are the next state actually, so thats really useful. If we change and make it not flush every time, then this isn't true
+    
+        print("Samples", samples)
+        print("Board Tensors", board_tensors)
+        print("labels", labels)
+        policy_net = get_policy_net()
+        target_net = get_target_net()
+
+        if len(samples) < MIN_REPLAY_BUFFER_LENGTH:
+            curr_board_tensor = create_board_tensor(game, self.color)
+            game_tensor = torch.tensor(curr_board_tensor, dtype=torch.float32).unsqueeze(0)
+            print(game_tensor.shape)
+            action_batch = torch.tensor([to_action_space(action) for action in actions])
+            print("action batch shape", action_batch.shape)
+            reward_batch = torch.tensor(labels, device=device, dtype=torch.float32) #maybe increase by 100
+            print("reward batch shape", reward_batch.shape)
+
+    
+
+            state_batch = [game_tensor] * len(board_tensors) #its the same state for all of the actions
+            state_batch = torch.stack(state_batch)
+            print("state batch size", state_batch.shape)
+
+            next_state_batch = []
+            for next_state in board_tensors:
+                next_state_batch.append(torch.tensor(next_state, dtype=torch.float32).reshape([1, 16, 21, 11]).clone().detach().to(device=device, dtype=torch.float))
+            
+            next_state_batch = torch.stack(next_state_batch)
+            print("next state batch shape", next_state_batch.shape)
+
+            state_action_values = policy_net.get_state_action_values(state_batch, action_batch) 
+            expected_state_action_values = reward_batch + (GAMMA * target_net.get_state_action_values(next_state_batch, policy_net(next_state_batch).argmax(1).detach()).detach())
+
+            loss = F.mse_loss(state_action_values, expected_state_action_values)
+
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            
+
+
+            
 
 
         
@@ -249,7 +318,18 @@ class OnlineMCTSDQNPlayer(Player):
         #     shuffle=True,
         # )
         # print("DONE training")
-        # if OVERWRITE_MODEL:
-        #     model.save(MODEL_PATH)
+        if OVERWRITE_MODEL:
+            global MODEL_DIR
+            print("Overwriting Model")
+            #models_dir = os.getcwd() + "/catanatron_experimental/catanatron_experimental/machine_learning/players/models"
+            #current_time = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+
+
+            policy_filename = f'policy_net_parameters.pth'
+            target_filename = f'target_net_parameters.pth'
+
+            # Save the model parameters with timestamp in the filename
+            torch.save(policy_net.state_dict(), os.path.join(MODEL_DIR, policy_filename))
+            torch.save(target_net.state_dict(), os.path.join(MODEL_DIR, target_filename))
 
         DATA_LOGGER.flush()

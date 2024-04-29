@@ -27,8 +27,9 @@ class DataLogger:
         # TODO: Implement, Actions and Rewards
         self.labels = []
         self.log_lines = []
+        self.actions = []
 
-    def consume(self, game, mcts_labels):
+    def consume(self, game, mcts_labels, action):
         import tensorflow as tf  # lazy import tf so that catanatron simulator is usable without tf
 
         for color in game.state.colors:
@@ -46,6 +47,7 @@ class DataLogger:
             self.samples.append(sample)
             self.board_tensors.append(flattened_board_tensor)
             self.labels.append(label)
+            self.actions.append(action)
             self.log_lines.append(
                 [
                     game.id,
@@ -55,7 +57,7 @@ class DataLogger:
             )
 
     def get_replay_buffer(self):
-        return self.samples, self.board_tensors, self.labels
+        return self.samples, self.board_tensors, self.labels, self.actions
 
     def flush(self):
         print("Flushing...")
@@ -111,4 +113,5 @@ class DataLogger:
         self.samples = []
         self.board_tensors = []
         self.labels = []
+        self.actions = []
         print("Done flushing data")

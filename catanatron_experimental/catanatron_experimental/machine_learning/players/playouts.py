@@ -27,7 +27,7 @@ from catanatron_gym.board_tensor_features import (
 )
 
 DEFAULT_NUM_PLAYOUTS = 25
-USE_MULTIPROCESSING = True
+USE_MULTIPROCESSING = False
 NUM_WORKERS = multiprocessing.cpu_count()
 
 PLAYOUTS_BUDGET = 100
@@ -122,11 +122,11 @@ def run_playouts(action_applied_game_copy, num_playouts, policy_net, target_net)
 def run_playout(args): 
     action_applied_game_copy, policy_net, target_net = args
     game_copy = action_applied_game_copy.copy()
-    game_copy.play(decide_fn= lambda x, y, z: dqn_decide_fn(x, y, z, policy_net, target_net))
+    game_copy.play(decide_fn= lambda x, y, z: decide_fn(x, y, z, policy_net, target_net))
     return game_copy.winning_color() #right now winning color is based on number of victory points, should this be the NN classification. 
 
 
-def decide_fn(self, game, playable_actions): #The method that actually determines which actions to take, right now its random but I think it can be changed
+def decide_fn(self, game, playable_actions, policy_net, target_net): #The method that actually determines which actions to take, right now its random but I think it can be changed
     index = random.randrange(0, len(playable_actions)) #right now its just choosing a random action
     return playable_actions[index]
 
