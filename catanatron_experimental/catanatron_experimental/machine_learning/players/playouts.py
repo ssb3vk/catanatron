@@ -16,7 +16,9 @@ import os
 from catanatron_experimental.machine_learning.players.action_model import ActionModel
 from catanatron_experimental.machine_learning.players.dueling_q_network import DuelingQNetworkConv
 import dill
-
+from catanatron_gym.envs.catanatron_env import (
+    to_action_space
+)
 from catanatron_gym.board_tensor_features import (
     WIDTH,
     HEIGHT,
@@ -129,8 +131,36 @@ def decide_fn(self, game, playable_actions): #The method that actually determine
     return playable_actions[index]
 
 def dqn_decide_fn(self, game, playable_actions, policy_net, target_net):
-    index = random.randrange(0, len(playable_actions)) #right now its just choosing a random action
-    return playable_actions[index]
+
+    game_tensor = create_board_tensor(game, self.color)  #not sure if this is supposed to be self.color, or some kind of rotating one based on who is acting
+    game_tensor = torch.tensor(game_tensor, dtype=torch.float32)
+
+    game_tensor = game_tensor.unsqueeze(0)  # Add a batch dimension
+
+    with torch.no_grad():  
+        policy_net.eval()  
+        action_probabilities = policy_net(game_tensor)
+
+
+    # Assuming logits are output directly related to actions
+    # Use softmax to convert logits to probabilities
+    #probabilities = torch.softmax(logits, dim=1).squeeze(0)
+
+    #action_indices = {action: idx for idx, action in enumerate(playable_actions)}
+    #mask = np.zeros(290)
+    #mask[playable_actions] = 1
+
+    filtered_probabilities = np.array([action_probabilities[0, to_action_space(action)].item() for action in playable_actions])
+    
+    #filtered_probabilities = [probabilities[action] for action in playable_actions]
+
+    #filtered_probabilities /= filtered_probabilities.sum()
+
+    #chosen_action = np.random.choice(range(len(playable_actions)), p=filtered_probabilities) #might be better to do based of probabilities for some sort of exploration
+    chosen_action = np.argmax(filtered_probabilities)
+    # print("Chosen Action", chosen_action)
+
+    return playable_actions[chosen_action]
 
 
 '''
