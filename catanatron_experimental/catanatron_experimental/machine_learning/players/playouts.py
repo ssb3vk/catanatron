@@ -35,7 +35,7 @@ PLAYOUTS_BUDGET = 100
 
 ACTION_SELECTION_MODEL = None
 ACTION_MODELS = None
-
+'''
 def get_action_selection_model():
     global ACTION_SELECTION_MODEL
     if ACTION_SELECTION_MODEL is None:
@@ -59,7 +59,7 @@ def get_action_models():
         for action_type in actions_with_models:
             ACTION_MODELS[action_type].load_state_dict(torch.load(os.getcwd() + "/catanatron_experimental/catanatron_experimental/machine_learning/players/training/saved_model_action_type_" + str(action_type) + ".pkl", pickle_module=dill))
     return ACTION_MODELS
-
+'''
 # Single threaded NUM_PLAYOUTS=25 takes ~185.3893163204193 secs on initial placement
 #   10.498431205749512 secs to do initial road (3 playable actions)
 # Multithreaded, dividing the NUM_PLAYOUTS only (actions serially), takes ~52.22048330307007 secs
@@ -71,8 +71,8 @@ class GreedyPlayoutsPlayer(Player):
     def __init__(self, color, num_playouts=DEFAULT_NUM_PLAYOUTS):
         super().__init__(color)
         self.num_playouts = int(num_playouts)
-        get_action_selection_model() #initialize models 
-        get_action_models()
+        #get_action_selection_model() #initialize models 
+        #get_action_models()
 
     def decide(self, game: Game, playable_actions):
         if len(playable_actions) == 1:
