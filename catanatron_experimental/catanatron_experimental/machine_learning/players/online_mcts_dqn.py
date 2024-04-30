@@ -301,6 +301,18 @@ class OnlineMCTSDQNPlayer(Player):
             loss.backward()
             optimizer.step()
 
+        if OVERWRITE_MODEL:
+                global MODEL_DIR
+                print("Overwriting Model")
+
+                policy_filename = f'policy_net_parameters.pth'
+                target_filename = f'target_net_parameters.pth'
+
+                # Save the model parameters with timestamp in the filename
+                torch.save(policy_net.state_dict(), os.path.join(MODEL_DIR, policy_filename))
+                torch.save(target_net.state_dict(), os.path.join(MODEL_DIR, target_filename))
+        DATA_LOGGER.flush()
+
             
 
 
@@ -318,18 +330,6 @@ class OnlineMCTSDQNPlayer(Player):
         #     shuffle=True,
         # )
         # print("DONE training")
-        if OVERWRITE_MODEL:
-            global MODEL_DIR
-            print("Overwriting Model")
-            #models_dir = os.getcwd() + "/catanatron_experimental/catanatron_experimental/machine_learning/players/models"
-            #current_time = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+            
 
-
-            policy_filename = f'policy_net_parameters.pth'
-            target_filename = f'target_net_parameters.pth'
-
-            # Save the model parameters with timestamp in the filename
-            torch.save(policy_net.state_dict(), os.path.join(MODEL_DIR, policy_filename))
-            torch.save(target_net.state_dict(), os.path.join(MODEL_DIR, target_filename))
-
-        DATA_LOGGER.flush()
+        

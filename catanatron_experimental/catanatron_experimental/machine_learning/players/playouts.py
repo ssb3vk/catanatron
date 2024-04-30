@@ -131,7 +131,12 @@ def decide_fn(self, game, playable_actions, policy_net, target_net): #The method
     return playable_actions[index]
 
 def dqn_decide_fn(self, game, playable_actions, policy_net, target_net):
+    epsilon = 0.05
+    if random.random() < epsilon: #choose a random action some percent of the time
+        index = random.randrange(0, len(playable_actions)) #
+        return playable_actions[index]
 
+    
     game_tensor = create_board_tensor(game, self.color)  #not sure if this is supposed to be self.color, or some kind of rotating one based on who is acting
     game_tensor = torch.tensor(game_tensor, dtype=torch.float32)
 
