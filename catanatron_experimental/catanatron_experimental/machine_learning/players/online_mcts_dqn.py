@@ -272,24 +272,24 @@ class OnlineMCTSDQNPlayer(Player):
         if len(samples) < MIN_REPLAY_BUFFER_LENGTH:
             curr_board_tensor = create_board_tensor(game, self.color)
             game_tensor = torch.tensor(curr_board_tensor, dtype=torch.float32).unsqueeze(0)
-            print(game_tensor.shape)
+            #print(game_tensor.shape)
             action_batch = torch.tensor([to_action_space(action) for action in actions])
-            print("action batch shape", action_batch.shape)
+            #print("action batch shape", action_batch.shape)
             reward_batch = torch.tensor(labels, device=device, dtype=torch.float32) #maybe increase by 100
-            print("reward batch shape", reward_batch.shape)
+            #print("reward batch shape", reward_batch.shape)
 
     
 
             state_batch = [game_tensor] * len(board_tensors) #its the same state for all of the actions
             state_batch = torch.stack(state_batch)
-            print("state batch size", state_batch.shape)
+            #rint("state batch size", state_batch.shape)
 
             next_state_batch = []
             for next_state in board_tensors:
                 next_state_batch.append(torch.tensor(next_state, dtype=torch.float32).reshape([1, 16, 21, 11]).clone().detach().to(device=device, dtype=torch.float))
             
             next_state_batch = torch.stack(next_state_batch)
-            print("next state batch shape", next_state_batch.shape)
+            #print("next state batch shape", next_state_batch.shape)
 
             state_action_values = policy_net.get_state_action_values(state_batch, action_batch) 
             expected_state_action_values = reward_batch + (GAMMA * target_net.get_state_action_values(next_state_batch, policy_net(next_state_batch).argmax(1).detach()).detach())
