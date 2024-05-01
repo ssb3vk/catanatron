@@ -15,7 +15,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import numpy as np
 
-models_dir = 'modelsDDQN3D'
+models_dir = 'modelsDDQN3D_noend'
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device: ", device)
 
@@ -48,6 +48,7 @@ env = gym.make(
 )
 #### Get the dimension of action and state
 n_actions = env.action_space.n
+print(n_actions)
 n_observations = (1, 16, 21, 11)
 
 class PrioritizedReplayMemory(object):
@@ -407,6 +408,9 @@ def train_models(algorithm):
         truncated = 0
 
         while not (terminated or truncated):
+            while ( len(env.unwrapped.get_valid_actions()) == 1 ): 
+                env.step(env.unwrapped.get_valid_actions()[0])
+            
             eps = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * iteration / EPS_DECAY)
             if random.random() > eps:
                 if algorithm == "DQN" or algorithm == "DDQN" or algorithm == "DQ3N" or algorithm == "DDQN3D":

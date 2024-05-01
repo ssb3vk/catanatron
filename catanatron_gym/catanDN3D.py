@@ -15,7 +15,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import numpy as np
 
-models_dir = 'modelsDN3D'
+models_dir = 'modelsDN3D_noend'
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device: ", device)
 
@@ -504,6 +504,9 @@ def train_models(algorithm):
         truncated = 0
 
         while not (terminated or truncated):
+            while ( len(env.unwrapped.get_valid_actions()) == 1 ): 
+                env.step(env.unwrapped.get_valid_actions()[0])
+
             eps = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * iteration / EPS_DECAY)
             if random.random() > eps:
                 if algorithm == "DQN" or algorithm == "DDQN" or algorithm == "DQ3N" or algorithm == "DDQN3D":
@@ -614,12 +617,5 @@ def train_models(algorithm):
 
 
 if __name__ == "__main__":
-    # generate_videos("random")
-    # train_models("DQ3N")
-    # generate_videos("DQN")
-    # train_models("DDQN")
-    # train_models("DDQN3D")
-    # train_models("DN")
     train_models("DN3D")
-    # generate_videos("DN")
     print("done")

@@ -15,7 +15,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import numpy as np
 
-models_dir = 'modelsDDQN3D'
+models_dir = 'modelsDQN3D_noend'
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device: ", device)
 
@@ -407,11 +407,13 @@ def train_models(algorithm):
         truncated = 0
 
         while not (terminated or truncated):
+            while ( len(env.unwrapped.get_valid_actions()) == 1 ): 
+                env.step(env.unwrapped.get_valid_actions()[0])
+            
             eps = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * iteration / EPS_DECAY)
             if random.random() > eps:
                 if algorithm == "DQN" or "DDQN" or "DQ3N" or "DDQN3D":
                     state.to(device)
-                    # print("iwthin decision")
                     state = state.unsqueeze(0)
 
                     # select a_t = argmax_a Q(s_t, a; theta)
@@ -448,7 +450,7 @@ def train_models(algorithm):
             current_episode_return += reward
 
             #### Update the target model
-            if algorithm == "DQN" or "DDQN" or "DQ3N":
+            if algorithm == "DQN" or algorithm == "DQ3N":
                 for target_param, policy_param in zip(target_net.parameters(), policy_net.parameters()):
                     target_param.data.copy_(TAU * policy_param.data + (1.0 - TAU) * target_param.data)
             
@@ -473,9 +475,9 @@ def train_models(algorithm):
                 state = next_state
 
             ## Choose your algorithm here
-            if algorithm == "DQN" or "DQ3N":
+            if algorithm == "DQN" or algorithm == "DQ3N":
                 optimize_model_DQN()
-            if algorithm == "DDQN" or "DDQN3D":
+            if algorithm == "DDQN":
                 optimize_model_DDQN()
             if algorithm == "DN":
                 optimize_model_DN()
@@ -506,11 +508,5 @@ def train_models(algorithm):
 
 
 if __name__ == "__main__":
-    # generate_videos("random")
     train_models("DQ3N")
-    # generate_videos("DQN")
-    # train_models("DDQN")
-    # train_models("DDQN3D")
-    # train_models("DN")
-    # generate_videos("DN")
     print("done")
