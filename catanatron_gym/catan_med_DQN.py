@@ -449,7 +449,7 @@ def train_models(algorithm):
             current_episode_return += reward
 
             #### Update the target model
-            if algorithm == "DQN" or "DDQN" or "DQ3N":
+            if algorithm == "DQN" or algorithm == "DDQN" or algorithm == "DQ3N":
                 for target_param, policy_param in zip(target_net.parameters(), policy_net.parameters()):
                     target_param.data.copy_(TAU * policy_param.data + (1.0 - TAU) * target_param.data)
             
@@ -474,9 +474,9 @@ def train_models(algorithm):
                 state = next_state
 
             ## Choose your algorithm here
-            if algorithm == "DQN" or "DQ3N":
+            if algorithm == "DQN" or algorithm == "DQ3N":
                 optimize_model_DQN()
-            if algorithm == "DDQN" or "DDQN3D":
+            if algorithm == "DDQN" or algorithm == "DDQN3D":
                 optimize_model_DDQN()
             if algorithm == "DN":
                 optimize_model_DN()
