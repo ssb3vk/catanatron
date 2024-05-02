@@ -91,7 +91,7 @@ class Game:
         players: List[Player],
         seed: Optional[int] = None,
         discard_limit: int = 7,
-        vps_to_win: int = 10,
+        vps_to_win: int = 6,
         catan_map: Optional[CatanMap] = None,
         initialize: bool = True,
     ):
