@@ -27,7 +27,7 @@ from catanatron_gym.board_tensor_features import (
 )
 
 DEFAULT_NUM_PLAYOUTS = 10
-USE_MULTIPROCESSING = True
+USE_MULTIPROCESSING = False
 NUM_WORKERS = multiprocessing.cpu_count()
 
 PLAYOUTS_BUDGET = 100
