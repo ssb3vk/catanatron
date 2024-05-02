@@ -25,11 +25,23 @@ Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state'
 ## Initialize Environment
 ###
 
+# initial reward function: 
+# def my_reward_function(game, p0_color):
+#     winning_color = game.winning_color()
+#     if winning_color is not None: 
+#         if p0_color == winning_color: 
+#             return 100
+#         else: 
+#             return game.get_victory_points(p0_color) - game.highest_victory_points() - 100
+    
+#     return game.get_victory_points(p0_color) - game.highest_victory_points()
+
+# reward function 02: 
 def my_reward_function(game, p0_color):
     winning_color = game.winning_color()
     if winning_color is not None: 
         if p0_color == winning_color: 
-            return 100
+            return 1000
         else: 
             return game.get_victory_points(p0_color) - game.highest_victory_points() - 100
     
