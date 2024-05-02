@@ -282,7 +282,7 @@ class OnlineMCTSDQNPlayer(Player):
             #print(game_tensor.shape)
             action_batch = torch.tensor([to_action_space(action) for action in actions], device = device)
             #print("action batch shape", action_batch.shape)
-            reward_batch = torch.tensor(labels, device=device, dtype=torch.float32, device = device) #maybe increase by 100
+            reward_batch = torch.tensor(labels, dtype=torch.float32, device = device) #maybe increase by 100
             #print("reward batch shape", reward_batch.shape)
 
     
