@@ -35,6 +35,8 @@ PLAYOUTS_BUDGET = 100
 
 ACTION_SELECTION_MODEL = None
 ACTION_MODELS = None
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("Using Device:", device)
 '''
 def get_action_selection_model():
     global ACTION_SELECTION_MODEL
@@ -131,15 +133,17 @@ def decide_fn(self, game, playable_actions, policy_net, target_net): #The method
     return playable_actions[index]
 
 def dqn_decide_fn(self, game, playable_actions, policy_net, target_net):
+    start_time = time.time()
     epsilon = 0.05
+    if len(playable_actions) == 1: #to avoid inbalance
+        return playable_actions[0]
     if random.random() < epsilon: #choose a random action some percent of the time
         index = random.randrange(0, len(playable_actions)) #
         return playable_actions[index]
 
     
     game_tensor = create_board_tensor(game, self.color)  #not sure if this is supposed to be self.color, or some kind of rotating one based on who is acting
-    game_tensor = torch.tensor(game_tensor, dtype=torch.float32)
-
+    game_tensor = torch.tensor(game_tensor, dtype=torch.float32, device = device)
     game_tensor = game_tensor.unsqueeze(0)  # Add a batch dimension
 
     with torch.no_grad():  
@@ -156,15 +160,17 @@ def dqn_decide_fn(self, game, playable_actions, policy_net, target_net):
     #mask[playable_actions] = 1
 
     filtered_probabilities = np.array([action_probabilities[0, to_action_space(action)].item() for action in playable_actions])
+    #print("Playable Actions", playable_actions)
+    #print("Filtered Probabilities", filtered_probabilities)
     
     #filtered_probabilities = [probabilities[action] for action in playable_actions]
-
     #filtered_probabilities /= filtered_probabilities.sum()
-
     #chosen_action = np.random.choice(range(len(playable_actions)), p=filtered_probabilities) #might be better to do based of probabilities for some sort of exploration
+
     chosen_action = np.argmax(filtered_probabilities)
     # print("Chosen Action", chosen_action)
-
+    #print("Time Elapsed", time.time() - start_time)
+    #print("Action Chosen and Probability", chosen_action, filtered_probabilities[chosen_action])
     return playable_actions[chosen_action]
 
 

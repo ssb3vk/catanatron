@@ -14,7 +14,7 @@ from catanatron.models.map import CatanMap
 from catanatron.models.player import Color, Player
 
 # To timeout RandomRobots from getting stuck...
-TURNS_LIMIT = 1000
+TURNS_LIMIT = 200
 
 
 def is_valid_action(state, action):

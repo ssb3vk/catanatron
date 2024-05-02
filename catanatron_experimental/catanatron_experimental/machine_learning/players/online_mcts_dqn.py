@@ -159,6 +159,7 @@ def get_policy_net():
     if POLICY_NET_SINGLETON == None:
         print("Loading Policy Net from file")
         POLICY_NET_SINGLETON = load_latest_model(DQN3D, models_dir = MODEL_DIR, model_type="policy")
+        #POLICY_NET_SINGLETON = POLICY_NET_SINGLETON.to(device) #to move model prediction to device, it should be already done by the load model function
     
     return POLICY_NET_SINGLETON
 
@@ -167,6 +168,9 @@ def get_target_net():
     if TARGET_NET_SINGLETON == None:
         print("Loading Target net from file")
         TARGET_NET_SINGLETON = load_latest_model(DQN3D, models_dir = MODEL_DIR, model_type="target")
+        #TARGET_NET_SINGLETON = TARGET_NET_SINGLETON.to(device)
+
+
 
 
     return TARGET_NET_SINGLETON
@@ -237,9 +241,12 @@ class OnlineMCTSDQNPlayer(Player):
             #Why is this only if train, when we choose the best action based on scores, doesn't really make sense
             if TRAIN:
                 # Save snapshots from the perspective of each player (more training!)
+                single_action_time = time.time()
                 counter = run_playouts(action_applied_game_copy, NUM_PLAYOUTS, policy_net, target_net) #returns a counter of how many times the game was won or lost
                 mcts_labels = {k: v / NUM_PLAYOUTS for k, v in counter.items()}
                 DATA_LOGGER.consume(action_applied_game_copy, mcts_labels, action) #adds the computation 
+                print("Single Action Time Taken:", time.time() - single_action_time )
+
                 scores.append(mcts_labels.get(self.color, 0))
 
         # TODO: if M step, do all 4 things.
@@ -271,11 +278,11 @@ class OnlineMCTSDQNPlayer(Player):
 
         if len(samples) < MIN_REPLAY_BUFFER_LENGTH:
             curr_board_tensor = create_board_tensor(game, self.color)
-            game_tensor = torch.tensor(curr_board_tensor, dtype=torch.float32).unsqueeze(0)
+            game_tensor = torch.tensor(curr_board_tensor, dtype=torch.float32, device = device).unsqueeze(0)
             #print(game_tensor.shape)
-            action_batch = torch.tensor([to_action_space(action) for action in actions])
+            action_batch = torch.tensor([to_action_space(action) for action in actions], device = device)
             #print("action batch shape", action_batch.shape)
-            reward_batch = torch.tensor(labels, device=device, dtype=torch.float32) #maybe increase by 100
+            reward_batch = torch.tensor(labels, device=device, dtype=torch.float32, device = device) #maybe increase by 100
             #print("reward batch shape", reward_batch.shape)
 
     
@@ -286,7 +293,7 @@ class OnlineMCTSDQNPlayer(Player):
 
             next_state_batch = []
             for next_state in board_tensors:
-                next_state_batch.append(torch.tensor(next_state, dtype=torch.float32).reshape([1, 16, 21, 11]).clone().detach().to(device=device, dtype=torch.float))
+                next_state_batch.append(torch.tensor(next_state, dtype=torch.float32, device = device).reshape([1, 16, 21, 11]).clone().detach().to(device=device, dtype=torch.float))
             
             next_state_batch = torch.stack(next_state_batch)
             #print("next state batch shape", next_state_batch.shape)
