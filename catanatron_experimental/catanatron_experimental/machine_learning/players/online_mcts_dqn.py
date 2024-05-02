@@ -132,7 +132,7 @@ def load_latest_model(model_class, models_dir='models', model_type='policy'):
     if model_type not in ['policy', 'target']:
         raise ValueError("model_type must be 'policy' or 'target'")
 
-    prefix = f"{model_type}_net_parameters-"
+    prefix = f"{model_type}_net_parameters"
 
     if not os.path.exists(models_dir):
         print(f"Directory '{models_dir}' does not exist. Returning a randomly initialized model.")
@@ -146,7 +146,8 @@ def load_latest_model(model_class, models_dir='models', model_type='policy'):
         print(f"No {model_type} model files found in the directory '{models_dir}'. Returning a randomly initialized model.")
         return model_class(n_observations, n_actions)  
 
-    latest_model_file = model_files[-1]
+    #latest_model_file = model_files[-1]
+    latest_model_file = prefix + ".pth"
 
     model_path = os.path.join(models_dir, latest_model_file)
     model = model_class(n_observations, n_actions)  # Assume model_class is a callable that returns an instance of the desired model
