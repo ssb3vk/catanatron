@@ -15,7 +15,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import numpy as np
 
-models_dir = 'modelsDQN3D_noend'
+models_dir = 'modelsDQN3D_noend_p02'
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device: ", device)
 
@@ -46,6 +46,17 @@ def my_reward_function(game, p0_color):
             return game.get_victory_points(p0_color) - game.highest_victory_points() - 100
     
     return game.get_victory_points(p0_color) - game.highest_victory_points()
+
+# reward function 03: 
+# def my_reward_function(game, p0_color):
+#     winning_color = game.winning_color()
+#     if winning_color is not None: 
+#         if p0_color == winning_color: 
+#             return 10
+#         else: 
+#             return game.get_victory_points(p0_color) - game.highest_victory_points() - 10
+    
+#     return game.get_victory_points(p0_color) - game.highest_victory_points()
 
 # 2-player catan until 6 points.
 env = gym.make(
