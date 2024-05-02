@@ -89,8 +89,8 @@ class GreedyPlayoutsPlayer(Player):
         for action in playable_actions:
             action_applied_game_copy = game.copy()
             action_applied_game_copy.execute(action)
-
             counter = run_playouts(action_applied_game_copy, num_playouts)
+
 
             wins = counter[self.color]
             if max_wins is None or wins > max_wins:
@@ -144,6 +144,7 @@ def dqn_decide_fn(self, game, playable_actions, policy_net, target_net):
     
     game_tensor = create_board_tensor(game, self.color)  #not sure if this is supposed to be self.color, or some kind of rotating one based on who is acting
     game_tensor = torch.tensor(game_tensor, dtype=torch.float32, device = device)
+    #game_tensor = game_tensor.cuda()
     game_tensor = game_tensor.unsqueeze(0)  # Add a batch dimension
 
     with torch.no_grad():  

@@ -159,6 +159,8 @@ def get_policy_net():
     if POLICY_NET_SINGLETON == None:
         print("Loading Policy Net from file")
         POLICY_NET_SINGLETON = load_latest_model(DQN3D, models_dir = MODEL_DIR, model_type="policy")
+        if torch.cuda.is_available():
+            POLICY_NET_SINGLETON.cuda()
         #POLICY_NET_SINGLETON = POLICY_NET_SINGLETON.to(device) #to move model prediction to device, it should be already done by the load model function
     
     return POLICY_NET_SINGLETON
@@ -168,6 +170,9 @@ def get_target_net():
     if TARGET_NET_SINGLETON == None:
         print("Loading Target net from file")
         TARGET_NET_SINGLETON = load_latest_model(DQN3D, models_dir = MODEL_DIR, model_type="target")
+        if torch.cuda.is_available():
+            TARGET_NET_SINGLETON.cuda()
+
         #TARGET_NET_SINGLETON = TARGET_NET_SINGLETON.to(device)
 
 
