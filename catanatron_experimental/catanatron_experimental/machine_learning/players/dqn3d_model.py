@@ -15,6 +15,8 @@ import torch.optim as optim
 import torch.nn.functional as F
 import numpy as np
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+ 
 class DQN3D(nn.Module):
     """
     A 3D convolutional neural network model designed for Q-learning in environments with
@@ -26,18 +28,18 @@ class DQN3D(nn.Module):
     """
     def __init__(self, input_shape=(1, 21, 11, 16), output_size=1):
         super(DQN3D, self).__init__()
-        self.conv1 = nn.Conv3d(input_shape[0], 32, kernel_size=(3, 3, 3), padding='same')
+        self.conv1 = nn.Conv3d(input_shape[0], 32, kernel_size=(3, 3, 3), padding='same', device = device)
         self.pool1 = nn.MaxPool3d(kernel_size=(2, 2, 2))
-        self.conv2 = nn.Conv3d(32, 64, kernel_size=(3, 3, 3), padding='same')
+        self.conv2 = nn.Conv3d(32, 64, kernel_size=(3, 3, 3), padding='same', device = device)
         self.pool2 = nn.MaxPool3d(kernel_size=(2, 2, 2))
         
         # Compute the size of the flattened output after all convolution and pooling layers
         self.flattened_size = self._get_conv_output(input_shape)
         
         # Dense layers for approximating the Q-function
-        self.fc1 = nn.Linear(self.flattened_size, 512)
-        self.fc2 = nn.Linear(512, 256)
-        self.output_layer = nn.Linear(256, output_size)
+        self.fc1 = nn.Linear(self.flattened_size, 512, device = device)
+        self.fc2 = nn.Linear(512, 256, device = device)
+        self.output_layer = nn.Linear(256, output_size, device = device)
 
     def _get_conv_output(self, shape):
         """Helper function to compute the size of the flattened features after convolutional layers"""

@@ -55,7 +55,7 @@ from catanatron_gym.board_tensor_features import (
 
 # ===== CONFIGURATION
 NUM_FEATURES = len(get_feature_ordering())
-NUM_PLAYOUTS = 100
+NUM_PLAYOUTS = 25
 MIN_REPLAY_BUFFER_LENGTH = 100
 BATCH_SIZE = 64
 FLUSH_EVERY = 1  # decisions. what takes a while is to generate samples via MCTS
@@ -245,7 +245,7 @@ class OnlineMCTSDQNPlayer(Player):
                 counter = run_playouts(action_applied_game_copy, NUM_PLAYOUTS, policy_net, target_net) #returns a counter of how many times the game was won or lost
                 mcts_labels = {k: v / NUM_PLAYOUTS for k, v in counter.items()}
                 DATA_LOGGER.consume(action_applied_game_copy, mcts_labels, action) #adds the computation 
-                print("Single Action Time Taken:", time.time() - single_action_time )
+                print("Single Action Time Taken:", time.time() - single_action_time)
 
                 scores.append(mcts_labels.get(self.color, 0))
 

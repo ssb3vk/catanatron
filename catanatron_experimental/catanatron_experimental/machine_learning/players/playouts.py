@@ -36,7 +36,7 @@ PLAYOUTS_BUDGET = 100
 ACTION_SELECTION_MODEL = None
 ACTION_MODELS = None
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print("Using Device:", device)
+print("Using Device for playouts:", device)
 '''
 def get_action_selection_model():
     global ACTION_SELECTION_MODEL
