@@ -15,7 +15,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import numpy as np
 
-models_dir = 'modelsDN3D_noend_p02'
+models_dir = 'modelsDN3D_noend_p03'
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device: ", device)
 
@@ -37,26 +37,26 @@ Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state'
 #     return game.get_victory_points(p0_color) - game.highest_victory_points()
 
 # reward function 02: 
-def my_reward_function(game, p0_color):
-    winning_color = game.winning_color()
-    if winning_color is not None: 
-        if p0_color == winning_color: 
-            return 1000
-        else: 
-            return game.get_victory_points(p0_color) - game.highest_victory_points() - 100
-    
-    return game.get_victory_points(p0_color) - game.highest_victory_points()
-
-# reward function 03: 
 # def my_reward_function(game, p0_color):
 #     winning_color = game.winning_color()
 #     if winning_color is not None: 
 #         if p0_color == winning_color: 
-#             return 10
+#             return 1000
 #         else: 
-#             return game.get_victory_points(p0_color) - game.highest_victory_points() - 10
+#             return game.get_victory_points(p0_color) - game.highest_victory_points() - 100
     
 #     return game.get_victory_points(p0_color) - game.highest_victory_points()
+
+# reward function 03: 
+def my_reward_function(game, p0_color):
+    winning_color = game.winning_color()
+    if winning_color is not None: 
+        if p0_color == winning_color: 
+            return 10
+        else: 
+            return game.get_victory_points(p0_color) - game.highest_victory_points() - 10
+    
+    return game.get_victory_points(p0_color) - game.highest_victory_points()
 
 # 2-player catan until 6 points.
 env = gym.make(
