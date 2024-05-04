@@ -384,6 +384,7 @@ root_dir = 'modelsDDQN3D'
 # Traverse the root directory and process each model
 for subdir, dirs, files in os.walk(root_dir):
     for dir in dirs:
+        print(dir)
         model_dir = os.path.join(subdir, dir)
         model_class = extract_model_details(dir)
         if model_class:
