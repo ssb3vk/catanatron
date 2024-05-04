@@ -1,9 +1,6 @@
 import os
 import concurrent.futures
 
-# Using ThreadPoolExecutor to parallelize the directory processing
-with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-    executor.map(process_directory, dirs)
 import gymnasium as gym
 import torch
 import numpy as np
@@ -434,3 +431,7 @@ def process_directory(dir):
 
 # Assuming `dirs` is a list of directory names
 dirs = [dir for dir in os.listdir(root_dir) if os.path.isdir(os.path.join(root_dir, dir))]
+
+# Using ThreadPoolExecutor to parallelize the directory processing
+with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+    executor.map(process_directory, dirs)
