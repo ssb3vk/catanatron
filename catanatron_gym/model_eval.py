@@ -405,6 +405,6 @@ for dir in dirs:
                 except:
                     print("a failure occured")
                 
-                print(f"Model in {dir} has a win rate of {win_rate:.2%}")
+                print(f"Model in {dir} has a win rate of {win_rate:.2%} \n")
         else:
             print(f"Could not identify a model class for directory {dir}")
