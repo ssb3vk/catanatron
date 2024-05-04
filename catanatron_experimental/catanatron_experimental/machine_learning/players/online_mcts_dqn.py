@@ -271,7 +271,7 @@ class OnlineMCTSDQNPlayer(Player):
     def update_model_and_flush_samples(self, game):
         """Trains using NN, and saves to disk"""
         global MIN_REPLAY_BUFFER_LENGTH, BATCH_SIZE, MODEL_PATH, OVERWRITE_MODEL
-        samples, board_tensors, next_board_tensors, labels, actions = DATA_LOGGER.sample_replay_buffer(batch_size=100) #Samples is the feature vector, board tensors is the board state (common knowledge), and labels is the montecarlo simulation
+        samples, board_tensors, next_board_tensors, labels, actions = DATA_LOGGER.sample_replay_buffer(batch_size=300) #Samples is the feature vector, board tensors is the board state (common knowledge), and labels is the montecarlo simulation
         #print("Overall Samples Shape", samples.shape)
 
         #I believe that board tensors are the next state actually, so thats really useful. If we change and make it not flush every time, then this isn't true
