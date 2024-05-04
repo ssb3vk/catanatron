@@ -367,7 +367,7 @@ def run_games(model, num_games=1000):
         terminated = False
         while not terminated:
             with torch.no_grad():
-                action_probabilities = model(state.float())
+                action_probabilities = model(state.unsqueeze(0).float())
                 valid_actions = env.unwrapped.get_valid_actions()
                 mask = torch.zeros(env.action_space.n, dtype=torch.float32, device=device)
                 mask[valid_actions] = 1
