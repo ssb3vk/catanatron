@@ -56,8 +56,8 @@ from catanatron_gym.board_tensor_features import (
 # ===== CONFIGURATION
 NUM_FEATURES = len(get_feature_ordering())
 NUM_PLAYOUTS = 25
-MIN_REPLAY_BUFFER_LENGTH = 100
-BATCH_SIZE = 64
+MIN_REPLAY_BUFFER_LENGTH = 25
+BATCH_SIZE = 150
 FLUSH_EVERY = 1  # decisions. what takes a while is to generate samples via MCTS
 TRAIN = True
 OVERWRITE_MODEL = True
@@ -227,7 +227,6 @@ class OnlineMCTSDQNPlayer(Player):
         scores = []
         #action_to_model_idx= [(19, "MOVE_ROBBER"), (20, "DISCARD"), (92, "BUILD_ROAD"), (146, "BUILD_SETTLEMENT"), (200, "BUILD_CITY"), (201, "BUY_DEVELOPMENT_CARD"), (202, "PLAY_KNIGHT_CARD"), (222, "PLAY_YEAR_OF_PLENTY"), (223, "PLAY_ROAD_BUILDING"), (228, "PLAY_MONOPOLY"), (288, "MARITIME_TRADE")]
         action_to_model_idx = [19, 20, 92, 146, 200, 201, 202, 222, 223, 228, 288]
-        models = [0] * len(action_to_model_idx)
         
 
         
@@ -271,7 +270,7 @@ class OnlineMCTSDQNPlayer(Player):
     def update_model_and_flush_samples(self, game):
         """Trains using NN, and saves to disk"""
         global MIN_REPLAY_BUFFER_LENGTH, BATCH_SIZE, MODEL_PATH, OVERWRITE_MODEL
-        samples, board_tensors, next_board_tensors, labels, actions = DATA_LOGGER.sample_replay_buffer(batch_size=300) #Samples is the feature vector, board tensors is the board state (common knowledge), and labels is the montecarlo simulation
+        samples, board_tensors, next_board_tensors, labels, actions = DATA_LOGGER.sample_replay_buffer(batch_size=BATCH_SIZE) #Samples is the feature vector, board tensors is the board state (common knowledge), and labels is the montecarlo simulation
         #print("Overall Samples Shape", samples.shape)
 
         #I believe that board tensors are the next state actually, so thats really useful. If we change and make it not flush every time, then this isn't true
@@ -287,7 +286,7 @@ class OnlineMCTSDQNPlayer(Player):
             #print(game_tensor.shape)
             action_batch = torch.tensor([to_action_space(action) for action in actions], device = device)
             #print("action batch shape", action_batch.shape)
-            reward_batch = torch.tensor(labels, dtype=torch.float32, device = device) #maybe increase by 100
+            reward_batch = torch.tensor(labels * 100, dtype=torch.float32, device = device) #maybe increase by 100
             #print("reward batch shape", reward_batch.shape)
 
             #Change the state batch to fit our model
@@ -315,9 +314,8 @@ class OnlineMCTSDQNPlayer(Player):
             optimizer.step()
 
             #Exponential Averaging for Target network
-            alpha = 0.02
             for target_param, policy_param in zip(target_net.parameters(), policy_net.parameters()):
-                target_param.data.copy_(alpha * policy_param.data + (1 - alpha) * target_param.data)
+                target_param.data.copy_(TAU * policy_param.data + (1 - TAU) * target_param.data)
         
 
 

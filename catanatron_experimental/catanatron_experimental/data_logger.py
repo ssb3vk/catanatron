@@ -67,7 +67,7 @@ class DataLogger:
         return self.samples, self.current_state_tensors, self.next_state_tensors, self.labels, self.actions
     
     def sample_replay_buffer(self, batch_size = 100):
-        if len(self.samples) >= batch_size:
+        if len(self.samples) <= batch_size:
             return self.get_replay_buffer()
         else:
             sampled_indices = np.random.choice(len(self.samples), batch_size, replace=False)
