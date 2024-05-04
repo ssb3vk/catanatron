@@ -25,6 +25,9 @@ env = gym.make(
     },
 )
 
+n_actions = env.action_space.n
+n_observations = (1, 16, 21, 11)
+
 class DQN3D_small(nn.Module):
     """
     A 3D convolutional neural network model designed for Q-learning in environments with
@@ -35,7 +38,7 @@ class DQN3D_small(nn.Module):
     - output_size (int): The number of possible actions.
     """
     def __init__(self, input_shape=(1, 21, 11, 16), output_size=1):
-        super(DQN3D, self).__init__()
+        super(DQN3D_small, self).__init__()
         self.conv1 = nn.Conv3d(input_shape[0], 32, kernel_size=(3, 3, 3), padding='same')
         self.pool1 = nn.MaxPool3d(kernel_size=(2, 2, 2))
         self.conv2 = nn.Conv3d(32, 64, kernel_size=(3, 3, 3), padding='same')
@@ -81,7 +84,7 @@ class DQN3D_small(nn.Module):
 
 class DQN3D_med(nn.Module):
     def __init__(self, input_shape=(1, 21, 11, 16), output_size=10):
-        super(DQN3D, self).__init__()
+        super(DQN3D_med, self).__init__()
         # Adding deeper convolutional layers and including batch normalization
         self.conv1 = nn.Conv3d(input_shape[0], 32, kernel_size=(3, 3, 3), padding='same')
         self.bn1 = nn.BatchNorm3d(32)
@@ -132,7 +135,7 @@ class DQN3D_med(nn.Module):
 
 class DuelingDQN3D_small(nn.Module):
     def __init__(self, input_shape=(1, 21, 11, 16), n_actions=10):
-        super(DuelingDQN3D, self).__init__()
+        super(DuelingDQN3D_small, self).__init__()
         
         # 3D Convolutional layers
         self.conv1 = nn.Conv3d(input_shape[0], 32, kernel_size=(3, 3, 3), padding='same')
@@ -227,7 +230,7 @@ class ResidualBlock3D(nn.Module):
 
 class DuelingDQN3D_med(nn.Module):
     def __init__(self, input_shape=(1, 21, 11, 16), n_actions=10):
-        super(DuelingDQN3D, self).__init__()
+        super(DuelingDQN3D_med, self).__init__()
         
         # 3D Convolutional layers
         self.conv1 = nn.Conv3d(input_shape[0], 64, kernel_size=(3, 3, 3), padding='same')
@@ -317,15 +320,15 @@ class DuelingDQN3D_med(nn.Module):
 
 # Define a dictionary of model classes
 model_classes = {
-    'DQN': {
+    'modelsDQN3D': {
         'med': DQN3D_med,
         'noend': DQN3D_small
     },
-    'DDQN': {
+    'modelsDDQN3D': {
         'med': DQN3D_med,
         'noend': DQN3D_small
     },
-    'DN': {
+    'modelsDN3D': {
         'med': DuelingDQN3D_med,
         'noend': DuelingDQN3D_small
     }
@@ -333,6 +336,8 @@ model_classes = {
 
 def extract_model_details(dirname):
     parts = dirname.split('_')
+    if len(parts) <= 1: 
+        return None
     model_type = parts[0]
     model_size = parts[1]
     if model_type in model_classes and model_size in model_classes[model_type]:
@@ -348,7 +353,7 @@ def load_model(model_class, model_dir):
         return None
     latest_model_file = sorted(model_files)[-1]
     model_path = os.path.join(model_dir, latest_model_file)
-    model = model_class()  # Create an instance of the model class
+    model = model_class(n_observations, n_actions)  # Create an instance of the model class
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.to(device)
     model.eval()
@@ -379,20 +384,20 @@ def run_games(model, num_games=1000):
     return win_rate
 
 # Root directory
-root_dir = 'modelsDDQN3D'
+root_dir = '/Users/sidhardhburre/Documents/Semester08/RL/catanatron'
 
-# Traverse the root directory and process each model
 print("here")
-for subdir, dirs, files in os.walk(root_dir):
-    print(dirs)
-    for dir in dirs:
-        print(dir)
-        model_dir = os.path.join(subdir, dir)
+# List directories directly under the root directory
+dirs = [d for d in os.listdir(root_dir) if os.path.isdir(os.path.join(root_dir, d))]
+# Process each directory that starts with "models"
+for dir in dirs:
+    if dir.startswith("models"):
+        model_dir = os.path.join(root_dir, dir)
         model_class = extract_model_details(dir)
         if model_class:
             model = load_model(model_class, model_dir)
             if model:
-                win_rate = run_games(model)
+                win_rate = run_games(model, num_games=1000)
                 print(f"Model in {dir} has a win rate of {win_rate:.2%}")
         else:
             print(f"Could not identify a model class for directory {dir}")
