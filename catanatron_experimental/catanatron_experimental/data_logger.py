@@ -23,13 +23,13 @@ class DataLogger:
     def __init__(self, output_path):
         self.output_path = Path(output_path)
 
-        self.samples = []
-        self.current_state_tensors = []
-        self.next_state_tensors = []
+        self.samples = np.array([])
+        self.current_state_tensors = np.array([])
+        self.next_state_tensors = np.array([])
         # TODO: Implement, Actions and Rewards
-        self.labels = []
-        self.log_lines = []
-        self.actions = []
+        self.labels = np.array([])
+        self.log_lines = np.array([])
+        self.actions = np.array([])
 
     def consume(self, game, mcts_labels, action):
         import tensorflow as tf  # lazy import tf so that catanatron simulator is usable without tf
@@ -50,18 +50,19 @@ class DataLogger:
 
             label = mcts_labels.get(color, 0)
 
-            self.samples.append(sample)
-            self.current_state_tensors.append(flattened_curr_board_tensor)
-            self.next_state_tensors.append(flattened_next_board_tensor)
-            self.labels.append(label)
-            self.actions.append(action)
+            self.samples = np.append(self.samples, sample)
+            self.current_state_tensors = np.append(self.current_state_tensors, flattened_curr_board_tensor)
+            self.next_state_tensors = np.append(self.next_state_tensors, flattened_next_board_tensor)
+            self.labels = np.append(self.labels, label)
+            self.actions = np.append(self.actions, action)
+            '''
             self.log_lines.append(
                 [
                     game.id,
                     len(game.state.actions),
                     "http://localhost:3000/games/" + game.id,
                 ]
-            )
+            )'''
 
     def get_replay_buffer(self):
         return self.samples, self.current_state_tensors, self.next_state_tensors, self.labels, self.actions
@@ -128,9 +129,9 @@ class DataLogger:
         )
 
         # Flush Memory
-        self.samples = []
-        self.current_state_tensors = []
-        self.next_state_tensors = []
-        self.labels = []
-        self.actions = []
+        self.samples = np.array([])
+        self.current_state_tensors = np.array([])
+        self.next_state_tensors = np.array([])
+        self.labels = np.array([])
+        self.actions = np.array([])
         print("Done flushing data")
