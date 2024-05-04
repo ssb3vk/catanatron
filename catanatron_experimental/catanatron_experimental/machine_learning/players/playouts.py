@@ -132,9 +132,9 @@ def decide_fn(self, game, playable_actions, policy_net, target_net): #The method
     index = random.randrange(0, len(playable_actions)) #right now its just choosing a random action
     return playable_actions[index]
 
-def dqn_decide_fn(self, game, playable_actions, policy_net, target_net):
+def dqn_decide_fn(self, game, playable_actions, policy_net, target_net, epsilon = 0.05):
     start_time = time.time()
-    epsilon = 0.05
+    
     if len(playable_actions) == 1: #to avoid inbalance
         return playable_actions[0]
     if random.random() < epsilon: #choose a random action some percent of the time

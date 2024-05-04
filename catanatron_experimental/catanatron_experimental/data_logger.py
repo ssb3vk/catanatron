@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
+import numpy as np
 
 from catanatron_gym.features import (
     create_sample_vector,
@@ -23,7 +24,8 @@ class DataLogger:
         self.output_path = Path(output_path)
 
         self.samples = []
-        self.board_tensors = []
+        self.current_state_tensors = []
+        self.next_state_tensors = []
         # TODO: Implement, Actions and Rewards
         self.labels = []
         self.log_lines = []
@@ -35,8 +37,12 @@ class DataLogger:
         for color in game.state.colors:
             sample = create_sample_vector(game, color)
             #print("Single Sample Idx:", sample.shape)
-            
-            flattened_board_tensor = tf.reshape(
+            flattened_curr_board_tensor = tf.reshape(
+                create_board_tensor(game, color),
+                (WIDTH * HEIGHT * CHANNELS,),
+            ).numpy()
+
+            flattened_next_board_tensor = tf.reshape(
                 create_board_tensor(game, color),
                 (WIDTH * HEIGHT * CHANNELS,),
             ).numpy()
@@ -45,7 +51,8 @@ class DataLogger:
             label = mcts_labels.get(color, 0)
 
             self.samples.append(sample)
-            self.board_tensors.append(flattened_board_tensor)
+            self.current_state_tensors.append(flattened_curr_board_tensor)
+            self.next_state_tensors.append(flattened_next_board_tensor)
             self.labels.append(label)
             self.actions.append(action)
             self.log_lines.append(
@@ -57,7 +64,18 @@ class DataLogger:
             )
 
     def get_replay_buffer(self):
-        return self.samples, self.board_tensors, self.labels, self.actions
+        return self.samples, self.current_state_tensors, self.next_state_tensors, self.labels, self.actions
+    
+    def sample_replay_buffer(self, batch_size = 100):
+        if len(self.samples) >= batch_size:
+            return self.get_replay_buffer()
+        else:
+            sampled_indices = np.random.choice(len(self.samples), batch_size, replace=False)
+            return self.samples[sampled_indices], self.current_state_tensors[sampled_indices], self.next_state_tensors[sampled_indices], self.labels[sampled_indices], self.actions[sampled_indices]
+
+        
+
+
 
     def flush(self):
         print("Flushing...")
@@ -65,7 +83,7 @@ class DataLogger:
         samples_df = pd.DataFrame(self.samples, columns=get_feature_ordering()).astype(
             "float64"
         )
-        board_tensors_df = pd.DataFrame(self.board_tensors).astype("float64")
+        board_tensors_df = pd.DataFrame(self.next_state_tensors).astype("float64")
         labels_df = pd.DataFrame(self.labels).astype("float64")
         logs_df = pd.DataFrame(
             self.log_lines, columns=["GAME_ID", "LEN(GAME.ACTIONS)", "LINK"]
@@ -111,7 +129,8 @@ class DataLogger:
 
         # Flush Memory
         self.samples = []
-        self.board_tensors = []
+        self.current_state_tensors = []
+        self.next_state_tensors = []
         self.labels = []
         self.actions = []
         print("Done flushing data")

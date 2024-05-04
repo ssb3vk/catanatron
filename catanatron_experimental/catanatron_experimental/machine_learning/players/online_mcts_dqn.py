@@ -271,34 +271,34 @@ class OnlineMCTSDQNPlayer(Player):
     def update_model_and_flush_samples(self, game):
         """Trains using NN, and saves to disk"""
         global MIN_REPLAY_BUFFER_LENGTH, BATCH_SIZE, MODEL_PATH, OVERWRITE_MODEL
-        samples, board_tensors, labels, actions = DATA_LOGGER.get_replay_buffer() #Samples is the feature vector, board tensors is the board state (common knowledge), and labels is the montecarlo simulation
+        samples, board_tensors, next_board_tensors, labels, actions = DATA_LOGGER.sample_replay_buffer(batch_size=25) #Samples is the feature vector, board tensors is the board state (common knowledge), and labels is the montecarlo simulation
         #print("Overall Samples Shape", samples.shape)
 
         #I believe that board tensors are the next state actually, so thats really useful. If we change and make it not flush every time, then this isn't true
     
-        print("Samples", samples)
-        print("Board Tensors", board_tensors)
-        print("labels", labels)
+        #print("Samples", samples)
+        #print("Curr Board Tensors", board_tensors)
+        #print("Next Board Tensors", next_board_tensors)
+        #print("labels", labels)
         policy_net = get_policy_net()
         target_net = get_target_net()
 
         if len(samples) < MIN_REPLAY_BUFFER_LENGTH:
-            curr_board_tensor = create_board_tensor(game, self.color)
-            game_tensor = torch.tensor(curr_board_tensor, dtype=torch.float32, device = device).unsqueeze(0)
             #print(game_tensor.shape)
             action_batch = torch.tensor([to_action_space(action) for action in actions], device = device)
             #print("action batch shape", action_batch.shape)
             reward_batch = torch.tensor(labels, dtype=torch.float32, device = device) #maybe increase by 100
             #print("reward batch shape", reward_batch.shape)
 
-    
-
-            state_batch = [game_tensor] * len(board_tensors) #its the same state for all of the actions
+            #Change the state batch to fit our model
+            state_batch = []
+            for curr_state in board_tensors:
+                state_batch.append(torch.tensor(curr_state, dtype=torch.float32, device = device).reshape([1, 16, 21, 11]).clone().detach().to(device=device, dtype=torch.float))
             state_batch = torch.stack(state_batch)
-            #rint("state batch size", state_batch.shape)
 
+            #Change next state batch as well
             next_state_batch = []
-            for next_state in board_tensors:
+            for next_state in next_board_tensors:
                 next_state_batch.append(torch.tensor(next_state, dtype=torch.float32, device = device).reshape([1, 16, 21, 11]).clone().detach().to(device=device, dtype=torch.float))
             
             next_state_batch = torch.stack(next_state_batch)
@@ -314,6 +314,13 @@ class OnlineMCTSDQNPlayer(Player):
             loss.backward()
             optimizer.step()
 
+            #Exponential Averaging for Target network
+            alpha = 0.02
+            for target_param, policy_param in zip(target_net.parameters(), policy_net.parameters()):
+                target_param.data.copy_(alpha * policy_param.data + (1 - alpha) * target_param.data)
+        
+
+
         if OVERWRITE_MODEL:
                 global MODEL_DIR
                 print("Overwriting Model")
@@ -324,7 +331,7 @@ class OnlineMCTSDQNPlayer(Player):
                 # Save the model parameters with timestamp in the filename
                 torch.save(policy_net.state_dict(), os.path.join(MODEL_DIR, policy_filename))
                 torch.save(target_net.state_dict(), os.path.join(MODEL_DIR, target_filename))
-        DATA_LOGGER.flush()
+        #DATA_LOGGER.flush() #not sure if i wanna flush here or if i wanna just do a sgd 
 
             
 
