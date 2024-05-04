@@ -398,6 +398,7 @@ for dir in dirs:
         if model_class:
             model = load_model(model_class, model_dir)
             if model:
+                win_rate = 0
                 print(f"Running with model in {dir}")
                 try:
                     win_rate = run_games(model, num_games=1)
