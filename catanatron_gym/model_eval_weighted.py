@@ -386,13 +386,14 @@ def run_games(model, num_games=1000):
     return win_rate
 
 # Root directory
-# root_dir = '/Users/sidhardhburre/Documents/Semester08/RL/catanatron'
-root_dir = '/sfs/weka/scratch/ssb3vk/RL/catanatron/catanatron'
+root_dir = '/Users/sidhardhburre/Documents/Semester08/RL/catanatron'
+# root_dir = '/sfs/weka/scratch/ssb3vk/RL/catanatron/catanatron'
 
-print("here")
-# List directories directly under the root directory
 dirs = [d for d in os.listdir(root_dir) if os.path.isdir(os.path.join(root_dir, d))]
-# Process each directory that starts with "models"
+
+results = []  # List to store results for printing later
+
+# Process each directory that starts with "modelsD"
 for dir in dirs:
     if dir.startswith("modelsD"):
         model_dir = os.path.join(root_dir, dir)
@@ -404,9 +405,12 @@ for dir in dirs:
                 print(f"Running with model in {dir}")
                 try:
                     win_rate = run_games(model, num_games=100)
-                except:
-                    print("a failure occured")
-                
-                print(f"Model in {dir} has a win rate of {win_rate:.2%} \n")
+                    results.append(f"Model in {dir} has a win rate of {win_rate:.2%}")
+                except Exception as e:
+                    results.append(f"Model in {dir} encountered a failure: {str(e)}")
         else:
-            print(f"Could not identify a model class for directory {dir}")
+            results.append(f"Could not identify a model class for directory {dir}")
+
+# Print all results at the end
+for result in results:
+    print(result)
