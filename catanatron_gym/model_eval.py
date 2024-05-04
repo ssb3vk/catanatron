@@ -1,4 +1,9 @@
 import os
+import concurrent.futures
+
+# Using ThreadPoolExecutor to parallelize the directory processing
+with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+    executor.map(process_directory, dirs)
 import gymnasium as gym
 import torch
 import numpy as np
@@ -387,12 +392,30 @@ def run_games(model, num_games=1000):
 # root_dir = '/Users/sidhardhburre/Documents/Semester08/RL/catanatron'
 root_dir = '/sfs/weka/scratch/ssb3vk/RL/catanatron/catanatron'
 
-print("here")
-# List directories directly under the root directory
-dirs = [d for d in os.listdir(root_dir) if os.path.isdir(os.path.join(root_dir, d))]
-# Process each directory that starts with "models"
-for dir in dirs:
-    if dir.startswith("models"):
+# print("here")
+# # List directories directly under the root directory
+# dirs = [d for d in os.listdir(root_dir) if os.path.isdir(os.path.join(root_dir, d))]
+# # Process each directory that starts with "models"
+# for dir in dirs:
+#     if dir.startswith("modelsD"):
+#         model_dir = os.path.join(root_dir, dir)
+#         model_class = extract_model_details(dir)
+#         if model_class:
+#             model = load_model(model_class, model_dir)
+#             if model:
+#                 win_rate = 0
+#                 print(f"Running with model in {dir}")
+#                 try:
+#                     win_rate = run_games(model, num_games=1)
+#                 except:
+#                     print("a failure occured")
+                
+#                 print(f"Model in {dir} has a win rate of {win_rate:.2%} \n")
+#         else:
+#             print(f"Could not identify a model class for directory {dir}")
+
+def process_directory(dir):
+    if dir.startswith("modelsD"):
         model_dir = os.path.join(root_dir, dir)
         model_class = extract_model_details(dir)
         if model_class:
@@ -402,9 +425,12 @@ for dir in dirs:
                 print(f"Running with model in {dir}")
                 try:
                     win_rate = run_games(model, num_games=1)
-                except:
-                    print("a failure occured")
+                except Exception as e:
+                    print("a failure occurred:", str(e))
                 
                 print(f"Model in {dir} has a win rate of {win_rate:.2%} \n")
         else:
             print(f"Could not identify a model class for directory {dir}")
+
+# Assuming `dirs` is a list of directory names
+dirs = [dir for dir in os.listdir(root_dir) if os.path.isdir(os.path.join(root_dir, dir))]
