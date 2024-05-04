@@ -384,7 +384,8 @@ def run_games(model, num_games=1000):
     return win_rate
 
 # Root directory
-root_dir = '/Users/sidhardhburre/Documents/Semester08/RL/catanatron'
+# root_dir = '/Users/sidhardhburre/Documents/Semester08/RL/catanatron'
+root_dir = '/sfs/weka/scratch/ssb3vk/RL/catanatron/catanatron'
 
 print("here")
 # List directories directly under the root directory
