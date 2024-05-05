@@ -15,7 +15,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import numpy as np
 
-models_dir = 'modelsDQN3D_med_noend_p04'
+models_dir = 'modelsDQN3D_med_noend_p05'
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device: ", device)
 
