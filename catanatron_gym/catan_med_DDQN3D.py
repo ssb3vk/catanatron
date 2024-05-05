@@ -59,15 +59,25 @@ Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state'
 #     return game.get_victory_points(p0_color) - game.highest_victory_points()
 
 # reward function 04: 
+# def my_reward_function(game, p0_color):
+#     winning_color = game.winning_color()
+#     if winning_color is not None: 
+#         if p0_color == winning_color: 
+#             return 100
+#         else: 
+#             return game.get_victory_points(p0_color) - game.highest_victory_points() - 10
+    
+#     return game.get_victory_points(p0_color) - game.highest_victory_points()
+# reward function 05: 
 def my_reward_function(game, p0_color):
     winning_color = game.winning_color()
     if winning_color is not None: 
         if p0_color == winning_color: 
-            return 100
+            return 1
         else: 
-            return game.get_victory_points(p0_color) - game.highest_victory_points() - 10
-    
-    return game.get_victory_points(p0_color) - game.highest_victory_points()
+            return -1
+    else: 
+        return 0
 
 # 2-player catan until 6 points.
 env = gym.make(
