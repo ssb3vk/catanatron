@@ -68,7 +68,7 @@ NORMALIZATION_VARIANCE_PATH = Path(DATA_PATH, "variance.npy")
 # ===================================
 #  Hyperparameters
 # ===================================
-BATCH_SIZE = 64
+BATCH_SIZE = 200
 GAMMA = 0.99
 EPS_START = 0.9
 EPS_END = 0.003
