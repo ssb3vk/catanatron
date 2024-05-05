@@ -23,13 +23,13 @@ class DataLogger:
     def __init__(self, output_path):
         self.output_path = Path(output_path)
 
-        self.samples = np.array([])
-        self.current_state_tensors = np.array([])
-        self.next_state_tensors = np.array([])
+        self.samples = []
+        self.current_state_tensors = []
+        self.next_state_tensors = []
         # TODO: Implement, Actions and Rewards
-        self.labels = np.array([])
-        self.log_lines = np.array([])
-        self.actions = np.array([])
+        self.labels = []
+        self.log_lines = []
+        self.actions = []
 
     def consume(self, game, mcts_labels, action):
         import tensorflow as tf  # lazy import tf so that catanatron simulator is usable without tf
@@ -50,11 +50,11 @@ class DataLogger:
 
             label = mcts_labels.get(color, 0)
 
-            self.samples = np.append(self.samples, sample)
-            self.current_state_tensors = np.append(self.current_state_tensors, flattened_curr_board_tensor)
-            self.next_state_tensors = np.append(self.next_state_tensors, flattened_next_board_tensor)
-            self.labels = np.append(self.labels, label)
-            self.actions = np.append(self.actions, action)
+            self.samples.append(sample)
+            self.current_state_tensors.append(flattened_curr_board_tensor)
+            self.next_state_tensors.append(flattened_next_board_tensor)
+            self.labels.append(label)
+            self.actions.append(action)
             '''
             self.log_lines.append(
                 [
@@ -72,7 +72,20 @@ class DataLogger:
             return self.get_replay_buffer()
         else:
             sampled_indices = np.random.choice(len(self.samples), batch_size, replace=False)
-            return self.samples[sampled_indices], self.current_state_tensors[sampled_indices], self.next_state_tensors[sampled_indices], self.labels[sampled_indices], self.actions[sampled_indices]
+            ret_samples = []
+            ret_curr_tensors = []
+            ret_next_tensors = []
+            ret_labels = []
+            ret_actions = []
+            for sampled_idx in sampled_indices:
+                ret_samples.append(self.samples[sampled_idx])
+                ret_curr_tensors.append(self.current_state_tensors[sampled_idx])
+                ret_next_tensors.append(self.next_state_tensors[sampled_idx])
+                ret_labels.append(self.labels[sampled_idx])
+                ret_actions.append(self.actions[sampled_idx])
+            print(len(self.samples), len(self.current_state_tensors), len(self.next_state_tensors))
+            print(sampled_indices)
+            return ret_samples, ret_curr_tensors, ret_next_tensors, ret_labels, ret_actions
 
         
 
@@ -129,9 +142,9 @@ class DataLogger:
         )
 
         # Flush Memory
-        self.samples = np.array([])
-        self.current_state_tensors = np.array([])
-        self.next_state_tensors = np.array([])
-        self.labels = np.array([])
-        self.actions = np.array([])
+        self.samples = []
+        self.current_state_tensors = []
+        self.next_state_tensors = []
+        self.labels = []
+        self.actions = []
         print("Done flushing data")
